@@ -7,13 +7,12 @@ class CovidApi:
         self._cdc_covid_cases_endpoint = 'https://data.cdc.gov/resource/9mfq-cb36.json'
         self._file_storage = file_storage
 
-    def retrieve_covid_case_data(self):
+    def retrieve_us_covid_case_data(self):
         response = requests.get(self._cdc_covid_cases_endpoint)
         json_data = response.json()
+        print('Retrieved covid case data')
         formatted_contents = json.dumps(json_data, indent=4, sort_keys=True)
-        print(formatted_contents)
-
         self._file_storage.store_as_file('covid_cases.json', formatted_contents)
-
+        print('Stored covid case data')
         return json_data
 

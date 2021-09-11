@@ -1,0 +1,10 @@
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+data_raw/
+raw_data/
+processed_data/
+.idea/
+__pycache__/

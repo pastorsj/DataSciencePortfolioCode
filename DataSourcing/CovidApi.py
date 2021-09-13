@@ -16,3 +16,5 @@ class CovidApi:
         print('Stored covid case data')
         return json_data
 
+    def retrieve_global_covid_case_data(self):
+        print('Todo: Retrieve global covid data for comparison against FIES data')

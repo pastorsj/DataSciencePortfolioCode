@@ -21,6 +21,7 @@ downloadAndStoreDataFromFAO('Food_Security_Data_E_All_Data', 'food_security_indi
 downloadAndStoreDataFromFAO('FoodBalanceSheets_E_All_Data', 'food_balance_sheets')
 downloadAndStoreDataFromFAO('FoodBalanceSheetsHistoric_E_All_Data', 'historic_food_balance_sheets')
 downloadAndStoreDataFromFAO('Production_Crops_Livestock_E_All_Data', 'production_livestock_and_crops')
+downloadAndStoreDataFromFAO('ConsumerPriceIndices_E_All_Data', 'consumer_prices_indicies')
 # This one is having problems
 # downloadAndStoreDataFromFAO('Trade_CropsLivestock_E_All_Data', 'trade_crop_livestock')
 

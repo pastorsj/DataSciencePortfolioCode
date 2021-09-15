@@ -15,6 +15,3 @@ class CovidApi:
         self._file_storage.store_as_file('covid_cases.json', formatted_contents)
         print('Stored covid case data')
         return json_data
-
-    def retrieve_global_covid_case_data(self):
-        print('Todo: Retrieve global covid data for comparison against FIES data')

@@ -1,18 +1,22 @@
 # Global Covid Cases 
 library(dplyr)
 library(tools)
+library(tidyverse)
 
 basePath = 'raw_data'
 processedDataPath = 'processed_data/'
 start <- as.Date("01-22-2020",format="%m-%d-%y")
 todaysDate <- as.Date(Sys.Date(),format="%m-%d-%y")
 base_url <- 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/'
+country <- 'Australia.csv'
 
 getAllData <- FALSE
-processAllData <- TRUE
+processAllData <- FALSE
+visualizeData <- TRUE
 
 processRow <- function (row) {
   country <- row[1]
+  date <- row[3]
   fileName = paste(processedDataPath, country, '.csv', sep = '')
   # if there is a csv file that exists with the country.region name, open it into a dataframe, else create a new one
   if (file.exists(fileName)) {
@@ -28,8 +32,6 @@ processRow <- function (row) {
 processCovidData <- function(df, formattedDate) {
   # Preprocess and save again into another R datasource, this time by country
   # for each country in the df
-  print('Processing file with date')
-  print(formattedDate)
   
   colnames(df)[which(names(df) == 'Country/Region')] <- 'Country.Region'
   colnames(df)[which(names(df) == 'Country_Region')] <- 'Country.Region'
@@ -37,13 +39,12 @@ processCovidData <- function(df, formattedDate) {
   groupedByCountry <- df %>% 
     filter(!is.na(Confirmed)) %>%
     group_by(Country = Country.Region) %>%
-    summarize(Confirmed = sum(Confirmed, na.rm = TRUE), Date = formattedDate) %>% 
-    mutate(Confirmed = as.numeric(Confirmed),
-           Country = as.character(Country),
-           Date = as.Date(Date,format="%m-%d-%y")
-    )
+    summarize(Confirmed = sum(Confirmed, na.rm = TRUE), Date = formattedDate)
   
     apply(groupedByCountry, 1, processRow)
+  
+  print('Processed date')
+  print(formattedDate)
 }
 
 if (getAllData) {
@@ -65,4 +66,19 @@ if (processAllData) {
   unlink("processed_data/*")
   allFiles = list.files(basePath, full.names = TRUE)
   lapply(allFiles, FUN = function(f) { processCovidData(read.csv(f), file_path_sans_ext(basename(f))) })
+}
+if (visualizeData) {
+  print('Visualizing global covid data for a country')
+  df <- read.csv(paste(processedDataPath, country, sep = ''))
+  df$Confirmed = as.numeric(df$Confirmed)
+  df$Date = as.Date(df$Date, format =  "%m-%d-%Y")
+  print(head(df))
+  print(str(df))
+  
+  p <- ggplot(df, aes(x = Date, y = Confirmed, group = 1)) +
+    geom_line(color="#69b3a2", size = 2) +
+    labs(x = "Date", y = "Confirmed Cases", 
+         title = "Covid Cases in Austrailia")
+    ggtitle("Covid Cases in Austrailia")
+  print(p)
 }

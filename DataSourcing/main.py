@@ -3,6 +3,7 @@ from DataSourcingFactory import DataSourcingFactory
 from GlobalHouseholdSurveyData import GlobalHouseholdSurveys
 from FileStorage import FileStorage
 from WDIIndicators import WDIIndicators
+from CustomSearch import CustomSearch
 
 load_dotenv()
 factory = DataSourcingFactory()
@@ -35,7 +36,7 @@ def print_menu():
 if __name__ == '__main__':
     # print('Welcome to the data sourcing program. What would you like to do?')
     # main()
-    WDIIndicators(FileStorage()).retrieve_wdi_indicator_data()
+    CustomSearch().search()
 
 
 

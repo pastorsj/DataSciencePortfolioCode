@@ -3,7 +3,7 @@ from DataSourcingFactory import DataSourcingFactory
 from GlobalHouseholdSurveyData import GlobalHouseholdSurveys
 from FileStorage import FileStorage
 from WDIIndicators import WDIIndicators
-from CustomSearch import CustomSearch
+from CustomSearchData import CustomSearch
 
 load_dotenv()
 factory = DataSourcingFactory()

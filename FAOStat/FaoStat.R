@@ -41,21 +41,21 @@ naValue <- 9999999
 
 # ------------------------- Control Panel -------------------------
 
-retrieveRawData <- TRUE
+retrieveRawData <- FALSE
 
-visualizeRawData <- TRUE
+visualizeRawData <- FALSE
 visualizeRawConsumerPriceData <- TRUE
 visualizeRawFoodSecurityIndicatorData <- TRUE
 
-processRawData <- TRUE
+processRawData <- FALSE
 processFoodIndicatorData <- TRUE
 processConsumerPriceData <- TRUE
 
-visualizeProcessedData <- TRUE
+visualizeProcessedData <- FALSE
 visualizeConsumerPriceIndexData <- TRUE
 visualizeFoodSecurityIndicatorData <- TRUE
 
-uploadDataToS3 <- FALSE
+uploadDataToS3 <- TRUE
 uploadRawDataToS3 <- TRUE
 uploadRawVisualizationsToS3 <- TRUE
 uploadProcessedDataToS3 <- TRUE
@@ -319,27 +319,33 @@ visualizeProcessedConsumerPricesData <- function(f, itemCode, type) {
   print('Visualizing processed data for')
   df <- read.csv(f)
   df <- df[(df$IndicatorCode == itemCode) & (df$Value != naValue), ]
-  country <- sub('-consumer-price-indices', '', file_path_sans_ext(basename(f)))
-  description <- paste(df$Description[[1]], ' for ', country, sep = '')
-  print(description)
-  df$Date <- as.Date(df$Date, '%m-%d-%Y')
-  df$Value <- as.numeric(df$Value)
-  
-  # Then you can create the xts necessary to use dygraph
-  don <- xts(x = df$Value, order.by = df$Date)
-  
-  # Finally the plot
-  p <- dygraph(don, main = description) %>%
-    dyOptions(labelsUTC = TRUE, fillGraph=TRUE, fillAlpha=0.1, drawGrid = FALSE, colors=randomColor()) %>%
-    dyRangeSelector() %>%
-    dyCrosshair(direction = "vertical") %>%
-    dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.2, hideOnMouseOut = FALSE)  %>%
-    dyRoller(rollPeriod = 1) %>%
-    dyAxis("x", label = "Time") %>%
-    dyAxis("y", label = "Consumer Prices")
-  
-  print('Saving visualization to processed data visualizations folder')
-  htmlwidgets::saveWidget(as_widget(p), paste(processedDataVisualizations, 'consumer_price_indices', type, paste(country, '.html', sep = ''), sep = '/'))
+  if (nrow(df) == 0) {
+    print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+    print('No data exists, skipping...')
+    print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+  } else {
+    country <- sub('-consumer-price-indices', '', file_path_sans_ext(basename(f)))
+    description <- paste(df$Description[[1]], ' for ', country, sep = '')
+    print(description)
+    df$Date <- as.Date(df$Date, '%m-%d-%Y')
+    df$Value <- as.numeric(df$Value)
+    
+    # Then you can create the xts necessary to use dygraph
+    don <- xts(x = df$Value, order.by = df$Date)
+    
+    # Finally the plot
+    p <- dygraph(don, main = description) %>%
+      dyOptions(labelsUTC = TRUE, fillGraph=TRUE, fillAlpha=0.1, drawGrid = FALSE, colors=randomColor()) %>%
+      dyRangeSelector() %>%
+      dyCrosshair(direction = "vertical") %>%
+      dyHighlight(highlightCircleSize = 5, highlightSeriesBackgroundAlpha = 0.2, hideOnMouseOut = FALSE)  %>%
+      dyRoller(rollPeriod = 1) %>%
+      dyAxis("x", label = "Time") %>%
+      dyAxis("y", label = "Consumer Prices")
+    
+    print('Saving visualization to processed data visualizations folder')
+    htmlwidgets::saveWidget(as_widget(p), paste(processedDataVisualizations, 'consumer_price_indices', type, paste(country, '.html', sep = ''), sep = '/'))
+  }
 }
 
 
@@ -376,7 +382,7 @@ visualizeProcessedFoodSecurityIndicatorData <- function(f, itemCode, type) {
   }
 }
 
-determineProcessedS3FilePath <- function(suffix, directory) {
+determineProcessedS3FilePath <- function(file, suffix, directory) {
   folderStructure <- unlist(strsplit(file, split = '/'))
   s3FilePath <- paste(folderStructure[1], directory, sub(suffix, '', folderStructure[2]), sep = '/')
   return(s3FilePath)
@@ -470,11 +476,11 @@ if (uploadDataToS3) {
   if (uploadProcessedDataToS3) {
     print('Uploading processed consumer price indices to S3')
     allFiles <- list.files(processedDataPath, full.names = TRUE, pattern = '*-consumer-price-indices.csv')
-    lapply(allFiles, FUN = function(f) { storeDataInS3(f, determineProcessedS3FilePath('-consumer-price-indices', 'consumer_price_indices')) })
+    lapply(allFiles, FUN = function(f) { storeDataInS3(f, determineProcessedS3FilePath(f, '-consumer-price-indices', 'consumer_price_indices')) })
     
     print('Uploading processed food security indicators to S3')
     allFiles <- list.files(processedDataPath, full.names = TRUE, pattern = '*-food-security-indicators.csv')
-    lapply(allFiles, FUN = function(f) { storeDataInS3(f, determineProcessedS3FilePath('-food-security-indicators', 'food_security_indicators')) })
+    lapply(allFiles, FUN = function(f) { storeDataInS3(f, determineProcessedS3FilePath(f, '-food-security-indicators', 'food_security_indicators')) })
   }
   if (uploadProcessedVisualizationsToS3) {
     print('Uploading processed visualizations to S3')

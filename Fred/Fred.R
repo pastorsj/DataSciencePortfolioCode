@@ -16,7 +16,7 @@ library('aws.s3')
 createDirectoryIfNotExists <- function(path) {
   # Create the directory if it doesn't exist.
   if (dir.exists(path) == FALSE) {
-    dir.create(path, )
+    dir.create(path, recursive = TRUE)
   }
 }
 

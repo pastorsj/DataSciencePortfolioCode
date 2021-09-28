@@ -46,6 +46,10 @@ class S3_API:
         s3_object = self._s3.Object(self._s3_bucket, f'{location.value}/{file_name}')
         s3_object.put(Body=html, ContentType='text/html')
 
-    def upload_news(self, json_data):
-        s3_object = self._s3.Object(self._s3_bucket, 'news/news.json')
+    def upload_json(self, json_data, file_name, location):
+        s3_object = self._s3.Object(self._s3_bucket, f'{location.value}/{file_name}')
         s3_object.put(Body=bytes(json.dumps(json_data).encode('utf-8')))
+
+    def upload_svg(self, svg, file_name, location):
+        s3_object = self._s3.Object(self._s3_bucket, f'{location.value}/{file_name}')
+        s3_object.put(Body=svg, ContentType='image/svg+xml')

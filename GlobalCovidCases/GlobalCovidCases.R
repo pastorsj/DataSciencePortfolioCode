@@ -2,31 +2,59 @@
 library(dplyr)
 library(tools)
 library(tidyverse)
+library(gsubfn)
+library(AnomalyDetection)
+library(hrbrthemes)
 
-basePath = 'raw_data'
-processedDataPath = 'processed_data/'
+createDirectoryIfNotExists <- function(path) {
+  # Create the directory if it doesn't exist.
+  if (dir.exists(path) == FALSE) {
+    dir.create(path, recursive = TRUE)
+  }
+}
+
+basePath <- 'raw_data'
+processedDataPath <- 'processed_data'
+processedDataVisualizations = 'processed_data_visualizations'
+
+createDirectoryIfNotExists(basePath)
+createDirectoryIfNotExists(paste(processedDataPath, 'global', sep = '/'))
+createDirectoryIfNotExists(paste(processedDataPath, 'state', sep = '/'))
+createDirectoryIfNotExists(processedDataVisualizations)
+
 start <- as.Date("01-22-2020",format="%m-%d-%y")
 todaysDate <- as.Date(Sys.Date(),format="%m-%d-%y")
 base_url <- 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/'
-country <- 'Australia.csv'
 statesPlusDC <- c(state.name, 'District of Columbia')
 stateAbbrPlusDC <- c(state.abb, 'DC')
 
 getAllData <- FALSE
-processAllData <- TRUE
-visualizeData <- FALSE
 
-processRow <- function (row) {
+visualizeRawData <- FALSE
+
+processAllData <- FALSE
+processUsData <- FALSE
+processGlobalData <- FALSE
+
+visualizeProcessedData <- TRUE
+visualizeUsProcessedData <- TRUE
+visualizeGlobalProcessedData <- FALSE
+
+processRow <- function (row, type) {
   country <- row[1]
   date <- row[3]
-  fileName = paste(processedDataPath, country, '.csv', sep = '')
+  fileName <- paste(processedDataPath, type, paste(country, '.csv', sep = ''), sep = '/')
   # if there is a csv file that exists with the country.region name, open it into a dataframe, else create a new one
   if (file.exists(fileName)) {
     csv <- read.csv(fileName)
-    trow <- t(row)
-    df <- rbind(csv, trow)
+    nextConfirmed <- as.numeric(row['Confirmed'])
+    lastConfirmed <- tail(csv$Confirmed, n = 1)
+    row['Cases'] <- nextConfirmed - lastConfirmed
+    df <- rbind(csv, t(row))
     write.csv(df, fileName, row.names = FALSE)
   } else {
+    row['Cases'] <- as.numeric(row['Confirmed'])
+    
     df <- data.frame(t(row), row.names = NULL)
     write.csv(df, file = fileName, row.names = FALSE)
   }
@@ -45,7 +73,7 @@ processGlobalCovidData <- function(df, formattedDate) {
     group_by(Country = Country.Region) %>%
     summarize(Confirmed = sum(Confirmed, na.rm = TRUE), Date = formattedDate)
   
-  apply(groupedByCountry, 1, processRow)
+  apply(groupedByCountry, 1, FUN = function(row) processRow(row, 'global'))
   
   print('Processed global covid data for date')
   print(formattedDate)
@@ -89,10 +117,23 @@ processUSCovidData <- function(df, formattedDate) {
     filter(Province.State %in% statesPlusDC) %>%
     summarize(Confirmed = sum(Confirmed, na.rm = TRUE), Date = formattedDate)
   
-  apply(groupedByState, 1, processRow)
-  
+  apply(groupedByState, 1, FUN = function(row) processRow(row, 'state'))
+
   print('Processed us state covid data for date')
   print(formattedDate)
+}
+
+visualizeCountryData <- function(country) {
+  df <- read.csv(paste(processedDataPath, 'global', paste(country, '.csv', sep = ''), sep = '/'))
+  df$Confirmed = as.numeric(df$Confirmed)
+  df$Date = as.Date(df$Date, format =  "%m-%d-%Y")
+  
+  p <- ggplot(df, aes(x = Date, y = Confirmed, group = 1)) +
+    geom_line(color="#69b3a2", size = 2) +
+    labs(x = "Date", 
+         y = "Confirmed Cases", 
+         title = "Covid Cases in Austrailia")
+  print(p)
 }
 
 if (getAllData) {
@@ -113,23 +154,21 @@ if (processAllData) {
   print('Processing all data')
   unlink("processed_data/*")
   allFiles = list.files(basePath, full.names = TRUE)
+  filesOrderedByDate <- allFiles[order(as.Date(strapplyc(allFiles, "\\d{2}-\\d+{2}-\\d{4}", simplify = TRUE), format =  "%m-%d-%Y"))]
   print('Processing state data!')
-  lapply(allFiles, FUN = function(f) { processUSCovidData(read.csv(f), file_path_sans_ext(basename(f))) })
-  print('Processing global country data')
-  lapply(allFiles, FUN = function(f) { processGlobalCovidData(read.csv(f), file_path_sans_ext(basename(f))) })
+  if (processUsData) {
+    lapply(filesOrderedByDate, FUN = function(f) { processUSCovidData(read.csv(f), file_path_sans_ext(basename(f))) })
+  }
+  if (processGlobalData) {
+    lapply(filesOrderedByDate, FUN = function(f) { processGlobalCovidData(read.csv(f), file_path_sans_ext(basename(f))) })
+  }
 }
-if (visualizeData) {
-  print('Visualizing global covid data for a country')
-  df <- read.csv(paste(processedDataPath, country, sep = ''))
-  df$Confirmed = as.numeric(df$Confirmed)
-  df$Date = as.Date(df$Date, format =  "%m-%d-%Y")
-  print(head(df))
-  print(str(df))
+if (visualizeProcessedData) {
+  if (visualizeUsProcessedData) {
+    allFiles = list.files(processedDataPath, full.names = TRUE)
+  }
+  if (visualizeGlobalProcessedData) {
+    
+  }  
   
-  p <- ggplot(df, aes(x = Date, y = Confirmed, group = 1)) +
-    geom_line(color="#69b3a2", size = 2) +
-    labs(x = "Date", y = "Confirmed Cases", 
-         title = "Covid Cases in Austrailia")
-    ggtitle("Covid Cases in Austrailia")
-  print(p)
 }

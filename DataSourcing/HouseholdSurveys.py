@@ -4,9 +4,10 @@ import re
 
 class HouseholdSurveysApi:
 
-    def __init__(self, file_storage):
+    def __init__(self, file_storage, s3_api):
         self._household_surveys_endpoint = 'https://www2.census.gov/programs-surveys/demo/tables/hhp/'
         self._file_storage = file_storage
+        self._s3_api = s3_api
 
     def retrieve_survey_data(self):
         response = requests.get(self._household_surveys_endpoint)
@@ -61,3 +62,10 @@ class HouseholdSurveysApi:
                     response = requests.get(survey_endpoint)
                     self._file_storage.store_as_file_in_bytes(f'survey_data/{survey_year}/{survey_week}/{survey}', response.content)
 
+    def store_survey_data(self):
+        print('Store raw survey data in S3')
+
+
+if __name__ == '__main__':
+    from FileStorage import FileStorage
+    HouseholdSurveysApi(FileStorage()).retrieve_survey_data()

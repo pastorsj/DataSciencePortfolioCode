@@ -1,12 +1,16 @@
 .Rproj.user/
 .Rhistory
+.Renviron
 .RData
 .Ruserdata
 
-data_raw/
-raw_data/
-processed_data/
 .idea/
 __pycache__/
 *.png
 *.html
+
+data_raw/
+processed_data/
+raw_data/
+raw_data_visualizations/
+processed_data_visualizations/

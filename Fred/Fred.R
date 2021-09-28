@@ -122,14 +122,14 @@ processFoodAndHospitalityDataForState <- function(df) {
   print(paste('Exploring the food and hospitality data for ', state, sep=''))
   cleanedDf <- data.frame(timestamp = as.Date(df$Date), count = as.numeric(df$Value))
   print(head(cleanedDf))
-  res = AnomalyDetectionTs(cleanedDf, max_anoms = 0.02, direction = 'pos')
+  res = AnomalyDetectionTs(cleanedDf, max_anoms = 0.02, direction = 'pos', plot=TRUE)
   if (nrow(res$anoms) == 0) {
     print('No anomalies detected in the time series data')
   } else {
     print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     print('An anomaly was detected')
-    print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     print(head(res$anoms))
+    print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
   }
   
   print('Writing cleaned data to processed folder')

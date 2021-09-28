@@ -5,6 +5,7 @@ library(tidyverse)
 library(gsubfn)
 library(AnomalyDetection)
 library(hrbrthemes)
+library(timetk)
 
 createDirectoryIfNotExists <- function(path) {
   # Create the directory if it doesn't exist.
@@ -34,11 +35,16 @@ visualizeRawData <- FALSE
 
 processAllData <- FALSE
 processUsData <- FALSE
-processGlobalData <- FALSE
+processGlobalData <- TRUE
 
-visualizeProcessedData <- TRUE
-visualizeUsProcessedData <- TRUE
-visualizeGlobalProcessedData <- FALSE
+visualizeProcessedData <- FALSE
+visualizeUsProcessedData <- FALSE
+visualizeGlobalProcessedData <- TRUE
+
+uploadDataToS3 <- TRUE
+uploadRawDataToS3 <- FALSE
+uploadProcessedDataToS3 <- FALSE
+uploadVisualizationsToS3 <- TRUE
 
 processRow <- function (row, type) {
   country <- row[1]
@@ -136,6 +142,77 @@ visualizeCountryData <- function(country) {
   print(p)
 }
 
+visualizeProcessedStateData <- function(file) {
+  df <- read.csv(file)
+  print('Creating a visualization for the following state')
+  extractedState <- df$State[1]
+  print(extractedState)
+
+  df$Date <- as.Date(df$Date, '%m-%d-%Y')
+  df$Cases <- as.numeric(df$Cases)
+
+  p <- plot_anomaly_diagnostics(
+    .data=df, 
+    .date_var = Date, 
+    .value = Cases,
+    .message = FALSE,
+    .facet_ncol = 3,
+    .ribbon_alpha = 0.25,
+    .title = paste("Covid Cases (per day) in ", extractedState, sep = ''),
+    .x_lab = "Date",
+    .y_lab = "Cases",
+    .interactive = TRUE)
+  
+  print('Saving plot of data')
+  htmlwidgets::saveWidget(as_widget(p), paste(processedDataVisualizations, 'state', paste(extractedState, '.html', sep = ''), sep = '/'))
+}
+
+visualizeProcessedGlobalData <- function(file) {
+  df <- read.csv(file)
+  extractedCountry <- df$Country[1]
+  tryCatch({
+    print('Creating a visualization for the following country')
+    print(extractedCountry)
+    
+    df$Date <- as.Date(df$Date, '%m-%d-%Y')
+    df$Cases <- as.numeric(df$Cases)
+    
+    p <- plot_anomaly_diagnostics(
+      .data=df, 
+      .date_var = Date, 
+      .value = Cases,
+      .message = FALSE,
+      .facet_ncol = 3,
+      .ribbon_alpha = 0.25,
+      .title = paste("Covid Cases (per day) in ", extractedCountry, sep = ''),
+      .x_lab = "Date",
+      .y_lab = "Cases",
+      .interactive = TRUE)
+    
+    print('Saving plot of data')
+    htmlwidgets::saveWidget(as_widget(p), paste(processedDataVisualizations, 'global', paste(extractedCountry, '.html', sep = ''), sep = '/'))
+  }, error = function(cond) {
+    print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
+    print('Unable to create visualization')
+    print(extractedCountry)
+    print(cond)
+    print('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^')
+  })
+}
+
+determineRawS3FilePath <- function(file, directory) {
+  folderStructure <- unlist(strsplit(file, split = '/'))
+  s3FilePath <- paste(folderStructure[1], directory, folderStructure[2], sep = '/')
+  return(s3FilePath)
+}
+
+storeDataInS3 <- function(file, s3FilePath) {
+  print('Storing file in s3')
+  print(s3FilePath)
+  put_object(file = file, object = s3FilePath, bucket = 'datastore.portfolio.sampastoriza.com')
+  print('Uploaded file to S3 successfully')
+}
+
 if (getAllData) {
   print('Getting all data')
   unlink("raw_data/*")
@@ -152,23 +229,44 @@ if (getAllData) {
 }
 if (processAllData) {
   print('Processing all data')
-  unlink("processed_data/*")
   allFiles = list.files(basePath, full.names = TRUE)
   filesOrderedByDate <- allFiles[order(as.Date(strapplyc(allFiles, "\\d{2}-\\d+{2}-\\d{4}", simplify = TRUE), format =  "%m-%d-%Y"))]
-  print('Processing state data!')
   if (processUsData) {
+    unlink("processed_data/state/*")
+    print('Processing state data')
     lapply(filesOrderedByDate, FUN = function(f) { processUSCovidData(read.csv(f), file_path_sans_ext(basename(f))) })
   }
   if (processGlobalData) {
+    unlink("processed_data/global/*")
+    print('Processing global data')
     lapply(filesOrderedByDate, FUN = function(f) { processGlobalCovidData(read.csv(f), file_path_sans_ext(basename(f))) })
   }
 }
 if (visualizeProcessedData) {
   if (visualizeUsProcessedData) {
-    allFiles = list.files(processedDataPath, full.names = TRUE)
+    allFiles = list.files(paste(processedDataPath, 'state', sep = '/'), full.names = TRUE)
+    lapply(allFiles, FUN = function(f) visualizeProcessedStateData(f))
   }
   if (visualizeGlobalProcessedData) {
-    
+    allFiles = list.files(paste(processedDataPath, 'global', sep = '/'), full.names = TRUE)
+    # visualizeProcessedGlobalData(allFiles[2])
+    lapply(allFiles, FUN = function(f) visualizeProcessedGlobalData(f))
   }  
-  
+}
+if (uploadDataToS3) {
+  if (uploadRawDataToS3) { 
+    print('Uploading raw covid cases data to S3')
+    allFiles <- list.files(basePath, full.names = TRUE, pattern = '*.csv')
+    lapply(allFiles, FUN = function(f) { storeDataInS3(f, determineRawS3FilePath(f, 'covid_cases')) })
+  }
+  if (uploadProcessedDataToS3) {
+    print('Uploading processed covid cases data to S3')
+    allFiles <- list.files(processedDataPath, full.names = TRUE, pattern = '*.csv', recursive = TRUE)
+    lapply(allFiles, FUN = function(f) { storeDataInS3(f, f) })
+  }
+  if (uploadVisualizationsToS3) {
+    print('Uploading processed covid cases data visualizations to S3')
+    allFiles <- list.files(processedDataVisualizations, full.names = TRUE, pattern = '*.html$', recursive = TRUE)
+    lapply(allFiles, FUN = function(f) { storeDataInS3(f, f) })
+  }
 }

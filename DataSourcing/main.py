@@ -1,8 +1,5 @@
 from dotenv import load_dotenv
 from DataSourcingFactory import DataSourcingFactory
-from GlobalHouseholdSurveyData import GlobalHouseholdSurveys
-from FileStorage import FileStorage
-from WDIIndicators import WDIIndicators
 from CustomSearchData import CustomSearch
 
 load_dotenv()

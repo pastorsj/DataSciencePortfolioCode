@@ -1,14 +1,27 @@
 import pandas as pd
-import pprint
 from datetime import datetime
 import glob
 import os
 import s3
 
+# Constants
+STORE_DATA = False
 
 class GlobalCovidLockdownProcessor:
+    """Processes the lockdown data and saves it"""
 
     def __init__(self, file_storage, s3_api):
+        """ Create a new instance of the GlobalCovidLockdownProcessor class
+
+        Parameters
+        ----------
+        :param file_storage: FileStorage, Required
+            The file storage class used to store raw/processed data
+        :param s3_api: S3_API, Required
+            The S3 api wrapper class used to store data in AWS S#
+
+        ----------
+        """
         self._file_storage = file_storage
         self._lockdown_file_path = f'{self._file_storage.get_raw_base_path()}/lockdown_data/lockdown_data.csv'
         self._start_of_covid = pd.to_datetime('2019-12-01') # Per wikipedia
@@ -17,8 +30,12 @@ class GlobalCovidLockdownProcessor:
         self._s3 = s3_api
 
     def process_global_lockdown_data(self):
+        """Process the global lockdown data and stores it in a dataframe"""
         df = pd.read_csv(self._lockdown_file_path)
+
+        # Clean up data types
         df[['StartDate', 'EndDate']] = df[['StartDate', 'EndDate']].apply(pd.to_datetime)
+        # Filter down lockdown data to only the United States and only Confirmed lockdowns
         united_states = df[(df['Country'] == 'United States') & (df['Confirmed'])]
         print(len(united_states))
 
@@ -41,6 +58,7 @@ class GlobalCovidLockdownProcessor:
             self._file_storage.store_processed_df_as_file(f'lockdown_data/{extracted_state}.csv', df)
 
     def store_processed_data(self):
+        """Stores the processed data in S3"""
         processed_files = list(glob.iglob(f'{self._file_storage.get_processed_base_path()}/lockdown_data/*.csv'))
         for file in processed_files:
             print('Processing and storing in s3', file)
@@ -56,5 +74,11 @@ if __name__ == '__main__':
     from dotenv import load_dotenv
     from FileStorage import FileStorage
     load_dotenv()
-    GlobalCovidLockdownProcessor(FileStorage(), s3.S3_API()).process_global_lockdown_data()
-    GlobalCovidLockdownProcessor(FileStorage(), s3.S3_API()).store_processed_data()
+    lockdown_data_instance = GlobalCovidLockdownProcessor(FileStorage(), s3.S3_API())
+
+    print('Processing global lockdown data')
+    lockdown_data_instance.process_global_lockdown_data()
+
+    if STORE_DATA:
+        print('Storing processed lockdown data results in S3')
+        lockdown_data_instance.store_processed_data()

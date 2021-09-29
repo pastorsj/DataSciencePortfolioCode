@@ -3,7 +3,7 @@ import json
 import requests
 from readability import Document
 import html2text
-import s3
+import S3Api
 
 # Constants
 STORE_DATA = False
@@ -112,7 +112,7 @@ class CustomSearchData:
         fp = open(file, "r")
         search_data = json.load(fp)
         print('Attempting to upload raw search data to s3')
-        self._s3_api.upload_json(search_data, file_path, s3.S3_Location.RAW_DATA)
+        self._s3_api.upload_json(search_data, file_path, S3Api.S3Location.RAW_DATA)
         print('Successfully uploaded')
 
 
@@ -120,7 +120,7 @@ if __name__ == '__main__':
     from dotenv import load_dotenv
     from FileStorage import FileStorage
     load_dotenv()
-    search_data_instance = CustomSearchData(FileStorage(), s3.S3_API())
+    search_data_instance = CustomSearchData(FileStorage(), S3Api.S3Api())
     print('Scraping the google search api for covid 19 articles relating to food security')
     search_data_instance.search(40, 'covid covid19 food security hunger', 'search_results/covid-search-results.json')
 

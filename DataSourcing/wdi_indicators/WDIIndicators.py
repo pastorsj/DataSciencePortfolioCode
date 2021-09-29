@@ -19,7 +19,7 @@ class WDIIndicators:
                 try:
                     df = pd.read_csv(zip.open(self._wdi_data))
                     print(df.head())
-                    output_file_name = 'raw_data/wdi_data/wdi_data.csv'
+                    output_file_name = '../raw_data/wdi_data/wdi_data.csv'
                     self._file_storage.create_directory_if_not_exists(output_file_name)
                     df.to_csv(output_file_name)
                 except Exception as error:

@@ -1,6 +1,6 @@
 import pandas as pd
 import plotly.express as px
-import s3
+import S3Api
 import codecs
 
 # Constants
@@ -62,18 +62,18 @@ class GlobalCovidLockdownVisualizer:
         """Stores the raw visualizations in S3"""
         f = codecs.open("../raw_data_visualizations/lockdown_data/global_lockdown_data.html", 'r')
         print('Attempting to upload global lockdown data html')
-        self._s3_api.upload_html(f.read(), 'lockdown_data/global_lockdown_data.html', s3.S3_Location.RAW_DATA_VISUALIZATIONS)
+        self._s3_api.upload_html(f.read(), 'lockdown_data/global_lockdown_data.html', S3Api.S3Location.RAW_DATA_VISUALIZATIONS)
 
         f = codecs.open("../raw_data_visualizations/lockdown_data/us_lockdown_data.html", 'r')
         print('Attempting to upload US lockdown data html')
-        self._s3_api.upload_html(f.read(), 'lockdown_data/us_lockdown_data.html', s3.S3_Location.RAW_DATA_VISUALIZATIONS)
+        self._s3_api.upload_html(f.read(), 'lockdown_data/us_lockdown_data.html', S3Api.S3Location.RAW_DATA_VISUALIZATIONS)
 
 
 if __name__ == '__main__':
     from dotenv import load_dotenv
     from FileStorage import FileStorage
     load_dotenv()
-    lockdown_visualizer_instance = GlobalCovidLockdownVisualizer(FileStorage(), s3.S3_API())
+    lockdown_visualizer_instance = GlobalCovidLockdownVisualizer(FileStorage(), S3Api.S3Api())
 
     print('Visualizing global lockdowns')
     lockdown_visualizer_instance.visualize_global_lockdowns()

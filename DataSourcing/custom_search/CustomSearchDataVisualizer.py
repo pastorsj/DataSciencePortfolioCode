@@ -1,7 +1,7 @@
 from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
 import json
 import matplotlib.pyplot as plt
-import s3
+import S3Api
 
 # Constants
 STORE_DATA = False
@@ -67,7 +67,7 @@ class CustomSearchDataVisualizer:
         print('Processing and storing in s3', file)
         svg = open(file, "rb")
         print('Attempting to upload raw visualized search data to s3')
-        self._s3_api.upload_svg(svg, file_path, s3.S3_Location.RAW_DATA_VISUALIZATIONS)
+        self._s3_api.upload_svg(svg, file_path, S3Api.S3Location.RAW_DATA_VISUALIZATIONS)
         print('Successfully uploaded')
 
 
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     from dotenv import load_dotenv
     from FileStorage import FileStorage
     load_dotenv()
-    search_data_visualizer = CustomSearchDataVisualizer(FileStorage(), s3.S3_API())
+    search_data_visualizer = CustomSearchDataVisualizer(FileStorage(), S3Api.S3Api())
 
     print('Visualizing covid search results using a wordcloud')
     search_data_visualizer.visualize_raw_search_data(

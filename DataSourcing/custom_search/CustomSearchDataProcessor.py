@@ -5,7 +5,7 @@ from nltk.stem import WordNetLemmatizer
 import nltk
 import json
 import pandas as pd
-import s3
+import S3Api
 
 # Constants
 STORE_DATA = False
@@ -88,7 +88,7 @@ class CustomSearchDataProcessor:
         print('Processing and storing in s3', file)
         df = pd.read_csv(file)
         print('Attempting to upload processed search data to s3')
-        self._s3_api.upload_df(df, file_path, s3.S3_Location.PROCESSED_DATA)
+        self._s3_api.upload_df(df, file_path, S3Api.S3Location.PROCESSED_DATA)
         print('Successfully uploaded')
 
 
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     from dotenv import load_dotenv
     from FileStorage import FileStorage
     load_dotenv()
-    search_data = CustomSearchDataProcessor(FileStorage(), s3.S3_API())
+    search_data = CustomSearchDataProcessor(FileStorage(), S3Api.S3Api())
 
     print('Processing covid search result data')
     search_data.parse_text_data(

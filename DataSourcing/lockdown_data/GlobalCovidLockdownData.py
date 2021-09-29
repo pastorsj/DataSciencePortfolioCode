@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-import s3
+import S3Api
 
 # Constants
 STORE_DATA = False
@@ -40,7 +40,7 @@ class GlobalCovidLockdownData:
         filename = os.path.basename(file).strip()
         lockdown_data = pd.read_csv(file, index_col=False)
         print('Attempting to upload raw lockdown data to s3')
-        self._s3_api.upload_df(lockdown_data, f'lockdown_data/{filename}', s3.S3_Location.RAW_DATA)
+        self._s3_api.upload_df(lockdown_data, f'lockdown_data/{filename}', S3Api.S3Location.RAW_DATA)
         print('Successfully uploaded')
 
 
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     from dotenv import load_dotenv
     from FileStorage import FileStorage
     load_dotenv()
-    lockdown_data_instance = GlobalCovidLockdownData(FileStorage(), s3.S3_API())
+    lockdown_data_instance = GlobalCovidLockdownData(FileStorage(), S3Api.S3Api())
 
     print('Retrieving lockdown data from api')
     lockdown_data_instance.retrieve_lockdown_data()

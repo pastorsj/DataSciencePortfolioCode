@@ -1,7 +1,6 @@
-from CovidApi import CovidApi
 from FileStorage import FileStorage
-from HouseholdSurveys import HouseholdSurveysApi
-from HouseholdSurveysProcessor import HouseholdSurveysProcessor
+from household_surveys.HouseholdSurveys import HouseholdSurveysApi
+from household_surveys.HouseholdSurveysProcessor import HouseholdSurveysProcessor
 
 class DataSourcingFactory:
     def __init__(self):
@@ -10,8 +9,7 @@ class DataSourcingFactory:
     def process(self, user_input):
         if user_input == '1':
             print('Retrieving raw covid data for the United States.')
-            covid_api = CovidApi(self._file_storage)
-            covid_api.retrieve_us_covid_case_data()
+            print('Fix later')
         elif user_input == '2':
             print('Retrieving raw household food security survey data for the United States.')
             household_survey_api = HouseholdSurveysApi(self._file_storage)

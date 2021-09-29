@@ -1,3 +1,4 @@
+# ------------------Libraries------------------
 library('FAOSTAT')
 library(tidyverse)
 library(plotly)
@@ -9,9 +10,13 @@ library(lubridate)
 library(randomcoloR)
 library(tools)
 library('aws.s3')
+# ---------------------------------------------
 
-
-# Setup directories
+#' Creates a directory if it does not exist yet
+#' 
+#' @param path A path to create
+#' @examples 
+#' createDirectoryIfNotExists('path/to/file')
 createDirectoryIfNotExists <- function(path) {
   # Create the directory if it doesn't exist.
   if (dir.exists(path) == FALSE) {
@@ -34,12 +39,12 @@ createDirectoryIfNotExists(paste(processedDataVisualizations, 'consumer_price_in
 createDirectoryIfNotExists(paste(processedDataVisualizations, 'food_security_indicators', 'food_supply_variability', sep = '/'))
 createDirectoryIfNotExists(paste(processedDataVisualizations, 'food_security_indicators', 'food_insecurity_population_percent', sep = '/'))
 
-# Initialize constants
+# Defined Constants 
 currentYearMinus1 <- as.integer(format(Sys.Date(), "%Y")) - 1
 startingYear <- 2000
 naValue <- 9999999
 
-# ------------------------- Control Panel -------------------------
+# -------------------- Control Panel --------------------
 
 retrieveRawData <- FALSE
 
@@ -61,9 +66,12 @@ uploadRawVisualizationsToS3 <- TRUE
 uploadProcessedDataToS3 <- TRUE
 uploadProcessedVisualizationsToS3 <- TRUE
 
-# -------------------------------------------------------------
+# -------------------------------------------------------
 
-# Retrieve FAO data
+#' Downloads and stores raw data from the FAO api and stores it in bulk
+#' 
+#' @param bulkDataFile The name of the bulk data file
+#' @param rdsFileName The name of the output file
 downloadAndStoreDataFromFAO = function(bulkDataFile, rdsFileName) {
   # The bulk url for the FAO api
   urlBulkUrl <- "http://fenixservices.fao.org/faostat/static/bulkdownloads"
@@ -82,17 +90,24 @@ downloadAndStoreDataFromFAO = function(bulkDataFile, rdsFileName) {
   write.csv(bulkData, paste(dataFolder, paste(rdsFileName, '.csv', sep = ''), sep = '/'))
 }
 
+#' Processes an indicator code and creates a dataframe as output
+#' 
+#' @param df The input dataframe
+#' @returns A cleaned dataframe contains information on the indicator, the unit of measure, the year, and the value of the indicator
 processIndicatorCode <- function(df) {
   newDataframe <- data.frame(IndicatorCode = integer(), Description = character(), UnitOfMeasure = character(), Year = integer(), Value = numeric())
   yearColNames <- colnames(df)
+  # Extract columns that either look like 'y2000' or 'y20002002' for 3 year averages
   yearColNames <- yearColNames[grepl('y[0-9]{4,8}$', yearColNames)]
   if (grepl('(3-year average)', df$item, fixed = TRUE)) {
+    # Find column names that indicate a 3 year average is taken
     yearColNames <- yearColNames[grepl('y[0-9]{8}$', yearColNames)]
     for (year in yearColNames) {
       extractedYears <- sub('y', '', year)
       boundingYears <- as.integer(strsplit(extractedYears, "(?<=.{4})", perl = TRUE)[[1]])
       years <- sort(c(boundingYears, boundingYears[1] + 1))
       value <- ifelse(is.na(df[year]) | df[year] == '', naValue, df[year])
+      # Sometimes the value is set to <0.1. In that case, the value is set to 0
       if (value[[1]] == '<0.1') {
         value[[1]] <- 0
       }
@@ -101,6 +116,7 @@ processIndicatorCode <- function(df) {
       }
     }
     newDataframe$Value = as.numeric(newDataframe$Value)
+    # Group by year and take the mean
     newDataframe <- newDataframe %>%
       filter(Value != naValue) %>%
       group_by(Year = Year) %>%
@@ -120,6 +136,7 @@ processIndicatorCode <- function(df) {
       newDataframe$UnitOfMeasure = df$unit
     }
   } else {
+    # Find column names that indicate a yearly average is taken
     yearColNames <- yearColNames[grepl('y[0-9]{4}$', yearColNames)]
     for (year in yearColNames) {
       extractedYear <- sub('y', '', year)
@@ -136,8 +153,14 @@ processIndicatorCode <- function(df) {
   return(newDataframe)
 }
 
+#' Processes the raw FAO Stat food security indicator data by country and 
+#' writes the results to a set of csv files
+#' 
+#' @param df The raw dataframe containing food security indicator information
 processCountry <- function(df) {
+  # Clean up countries with special characters. CSV names do not like special characters
   country <- iconv(df$area[1], from = 'UTF-8', to = 'ASCII//TRANSLIT')
+  # Standardize the United States country name
   if (!is.na(country) & country == 'United States of America') {
     country = 'United States'
   }
@@ -166,12 +189,23 @@ processCountry <- function(df) {
   }
 }
 
-extractDateGivenMonthAndYear <- function(year, month) {
-  convertedMonth <- str_pad(match(month, month.name), 2, pad = '0')
+#' Converts a month and year into a date
+#' 
+#' @param year The year
+#' @param rawMonth The month
+#' @returns The date given the month and year
+#' @examples 
+#' extractDateGivenMonthAndYear(2020, 'January') => 01-01-2020
+extractDateGivenMonthAndYear <- function(year, rawMonth) {
+  # Use the internal R variable month to extract the numeric value of the rawMonth parameter
+  convertedMonth <- str_pad(match(rawMonth, month.name), 2, pad = '0')
   extractedDate <- paste(convertedMonth, '01', year, sep = '-')
   return(extractedDate)
 }
 
+#' Processes a consumer price index by country
+#' 
+#' @param df The raw dataframe containing consumer price indices information
 processPriceIndex <- function(df) {
   newDataframe <- data.frame(IndicatorCode = integer(), Description = character(), UnitOfMeasure = character(), Date = character(), Value = numeric())
   yearColNames <- colnames(df)
@@ -185,11 +219,15 @@ processPriceIndex <- function(df) {
       newDataframe[nrow(newDataframe) + 1, ] = c(row$item_code, row$item, row$unit, extractedDate, as.numeric(value))
     }
   }
-  newDataframe <- newDataframe[order(as.Date(newDataframe$Date, format="%m-%d-%Y")),]
+  newDataframe <- newDataframe[order(as.Date(newDataframe$Date, format = "%m-%d-%Y")),]
   newDataframe <- newDataframe[newDataframe$Value != naValue, ]
   return(newDataframe)
 }
 
+#' Processes the raw FAO Stat consumer price index data by country and 
+#' writes the results to a set of csv files
+#' 
+#' @param df The raw dataframe containing consumer price indices information
 processIndicesByCountry <- function(df) {
   country <- iconv(df$area[1], from = 'UTF-8', to = 'ASCII//TRANSLIT')
   if (!is.na(country) & country == 'United States of America') {
@@ -217,16 +255,27 @@ processIndicesByCountry <- function(df) {
   }
 }
 
+#' Processes the food security indicators by country
+#' 
+#' @param df The raw dataframe containing food security indicator information
 processFoodSecurityIndicatorData <- function(df) {
   groupedByCountry <- split(df, df$area)
   lapply(groupedByCountry, processCountry)
 }
 
+#' Processes the consumer price indices  by country
+#' 
+#' @param df The raw dataframe containing consumer price indices information
 processConsumerPriceIndicesData <- function(df) {
   groupedByCountry <- split(df, df$area)
   lapply(groupedByCountry, processIndicesByCountry)
 }
 
+#' Visualizes the raw consumer price index information by country
+#' 
+#' @param itemCode The item code associated with an index
+#' @param month The month being visualized
+#' @param year The year being visualized
 visualizeRawGlobalConsumerPriceData <- function(itemCode, month, year) {
   print('Visualizing raw global consumer price data')
   yearColumn = paste('y', year, sep = '')
@@ -250,6 +299,7 @@ visualizeRawGlobalConsumerPriceData <- function(itemCode, month, year) {
   df <- consumerPriceIndicesDF[order(consumerPriceIndicesDF[yearColumn]), ]
   df$area <- factor(df$area, levels = unique(as.character(df$area)) )
   
+  # Plot index data by country for a particular month and year
   fig <- plot_ly(x = df[yearColumn][[1]], 
                  y = df$area, 
                  type = 'bar', 
@@ -271,6 +321,11 @@ visualizeRawGlobalConsumerPriceData <- function(itemCode, month, year) {
   htmlwidgets::saveWidget(as_widget(fig), paste(rawDataVisualizations, 'global_consumer_price_data.html', sep = '/'))
 }
 
+#' Visualizes the raw food security indicator information by country
+#' 
+#' @param itemCode The item code associated with an indicator
+#' @param month The month being visualized
+#' @param year The year being visualized
 visualizeRawGlobalFoodSecurityIndicatorData <- function(itemCode, year) {
   print('Visualizing raw global food security indicator data')
   yearColumn = paste('y', year, sep = '')
@@ -280,6 +335,7 @@ visualizeRawGlobalFoodSecurityIndicatorData <- function(itemCode, year) {
     (foodSecurityIndicatorsDF$item_code == itemCode) &
       (!is.na(foodSecurityIndicatorsDF[yearColumn])), ]
   
+  # Clean some of the columns in the raw data before visualizing.
   foodSecurityIndicatorsDF$area <- iconv(foodSecurityIndicatorsDF$area, from = 'UTF-8', to = 'ASCII//TRANSLIT')
   foodSecurityIndicatorsDF <- subset(foodSecurityIndicatorsDF, select = c('area', yearColumn))
   foodSecurityIndicatorsDF$area[foodSecurityIndicatorsDF$area == 'United States of America'] <- 'United States'
@@ -315,6 +371,11 @@ visualizeRawGlobalFoodSecurityIndicatorData <- function(itemCode, year) {
   htmlwidgets::saveWidget(as_widget(fig), paste(rawDataVisualizations, 'global_food_indicator_data.html', sep = '/'))
 }
 
+#' Visualizes the processed consumer price data using the dygraph software
+#' 
+#' @param f The file containing the processed dataframe
+#' @param itemCode The item code associated with an index
+#' @param type The description of the index
 visualizeProcessedConsumerPricesData <- function(f, itemCode, type) {
   print('Visualizing processed data for')
   df <- read.csv(f)
@@ -348,7 +409,11 @@ visualizeProcessedConsumerPricesData <- function(f, itemCode, type) {
   }
 }
 
-
+#' Visualizes the processed food security indicator data using the dygraph software
+#' 
+#' @param f The file containing the processed dataframe
+#' @param itemCode The item code associated with an indicator
+#' @param type The description of the indicator
 visualizeProcessedFoodSecurityIndicatorData <- function(f, itemCode, type) {
   print('Visualizing processed data for')
   df <- read.csv(f)
@@ -382,12 +447,23 @@ visualizeProcessedFoodSecurityIndicatorData <- function(f, itemCode, type) {
   }
 }
 
+#' Determines the raw s3 file path used when uploading the data to S3
+#' 
+#' @param file An existing file path
+#' @param directory A directory to categorize the data in S3
+#' @returns The s3 file path
+#' @examples 
+#' determineRawS3FilePath('raw_data/data.csv', 'specific_path_in_s3') => 'raw_data/specific_path_in_s3/data.csv'
 determineProcessedS3FilePath <- function(file, suffix, directory) {
   folderStructure <- unlist(strsplit(file, split = '/'))
   s3FilePath <- paste(folderStructure[1], directory, sub(suffix, '', folderStructure[2]), sep = '/')
   return(s3FilePath)
 }
 
+#' Stores a file in S3
+#' 
+#' @param file A file
+#' @param directory The final location for the file in S3
 storeDataInS3 <- function(file, s3FilePath) {
   print('Storing file in s3')
   print(s3FilePath)
@@ -395,7 +471,7 @@ storeDataInS3 <- function(file, s3FilePath) {
   print('Uploaded file to S3 successfully')
 }
 
-# ------------------------------------------------------------------------------------------------------------
+# -------------------------- Control Panel Processor -------------------------- 
 
 if (retrieveRawData) {
   unlink('raw_data/*')
@@ -489,4 +565,4 @@ if (uploadDataToS3) {
   }
 }
 
-# ------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------

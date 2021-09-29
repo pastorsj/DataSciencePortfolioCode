@@ -1,18 +1,23 @@
+# ------------------Libraries------------------
 library(tidyverse)
 library(plotly)
 library(fredr)
 library(tools)
 library(randomcoloR)
-#install.packages("devtools")
-#devtools::install_github("twitter/AnomalyDetection")
 library(AnomalyDetection)
 library(hrbrthemes)
-library('aws.s3')
+library(aws.s3)
+# ---------------------------------------------
 
 # Uncomment once to set the fred api key.
 # See https://cran.r-project.org/web/packages/fredr/vignettes/fredr.html
 # usethis::edit_r_environ()
 
+#' Creates a directory if it does not exist yet
+#' 
+#' @param path A path to create
+#' @examples 
+#' createDirectoryIfNotExists('path/to/file')
 createDirectoryIfNotExists <- function(path) {
   # Create the directory if it doesn't exist.
   if (dir.exists(path) == FALSE) {
@@ -28,12 +33,15 @@ createDirectoryIfNotExists(dataFolder)
 createDirectoryIfNotExists(processedDataPath)
 createDirectoryIfNotExists(processedDataVisualizations)
 
+# Defined Constants 
 foodAndHospitalitySuffix <- '-employment-food-and-hospitality'
 foodManufacturingSuffix <- '-employment-food-manufacturing'
 foodAndHospitalityRds <- function(state) paste(state, foodAndHospitalitySuffix, '.rds', sep = '')
 foodAndHospitalityCsv <- function(state) paste(state, foodAndHospitalitySuffix, '.csv', sep = '')
 foodManufacturingRds <- function(state) paste(state, foodManufacturingSuffix, '.rds', sep = '')
 foodManufacturingCsv <- function(state) paste(state, foodManufacturingSuffix, '.csv', sep = '')
+
+# -------------------- Control Panel --------------------
 
 retrieveRawData <- FALSE
 retrieveLAHRawData <- TRUE
@@ -47,22 +55,31 @@ visualizeProcessedData <- FALSE
 visualizeLAHProcessedData <- TRUE
 visualizeMProcessedData <- TRUE
 
-uploadDataToS3 <- TRUE
+uploadDataToS3 <- FALSE
 uploadRawDataToS3 <- TRUE
 uploadProcessedDataToS3 <- TRUE
 uploadVisualizationsToS3 <- TRUE
 
+# -------------------------------------------------------
+
+#' Retrieves the raw leisure and hospitality employment data for 50 states
 retrieveLeisureAndHospitalityEmploymentDataFor50States <- function() {
   seriesIds <- c(1:56)
   for (i in seriesIds) { 
+    # Create the FRED series id associated with leisure and hospitality employment data
     seriesId <- paste('SMU', str_pad(i, 2, pad = '0'), '000007072200001SA', sep = '')
     print('Retrieving hospitality and leisure series with id')
     print(seriesId)
+    # Attempt to retrieve data for each state. In some cases, the state may not have data,
+    # in which case, the FRED api will fail. In the case it fails, we print a message 
+    # and move on.
     tryCatch({
+      # Using a library, we make the request against the FRED api
       seriesInformation <- fredr_request(series_id = seriesId, endpoint = "series")
       extractedState <- str_extract(seriesInformation$title, paste(state.name, collapse='|'))
       observations <- fredr(series_id = seriesId)
       df <- data.frame(Date = observations$date, Value = observations$value)
+      # Add some extra information to the raw data for context
       df$Units <- seriesInformation$units
       df$State = extractedState
       df$Frequency = seriesInformation$frequency
@@ -84,18 +101,24 @@ retrieveLeisureAndHospitalityEmploymentDataFor50States <- function() {
   }
 }
 
+#' Retrieves the raw leisure and hospitality employment data for 50 states
 retrieveManufacturingEmploymentDataFor50States <- function() {
   seriesIds <- c(1:56)
   for (i in seriesIds) { 
+    # Create the FRED series id associated with food manufacturing employment data
     seriesId <- paste('SMU', str_pad(i, 2, pad = '0'), '000003231100001SA', sep = '')
     print('Retrieving food manufacturing series with id')
     print(seriesId)
+    # Attempt to retrieve data for each state. In some cases, the state may not have data,
+    # in which case, the FRED api will fail. In the case it fails, we print a message 
+    # and move on.
     tryCatch({
       seriesInformation <- fredr_request(series_id = seriesId, endpoint = "series")
       print(seriesInformation$title)
       extractedState <- str_extract(seriesInformation$title, paste(state.name, collapse='|'))
       observations <- fredr(series_id = seriesId)
       df <- data.frame(Date = observations$date, Value = observations$value)
+      # Add some extra information to the raw data for context
       df$Units <- seriesInformation$units
       df$State = extractedState
       df$Frequency = seriesInformation$frequency
@@ -117,11 +140,16 @@ retrieveManufacturingEmploymentDataFor50States <- function() {
   }
 }
 
+#' Processes food and hospitality data per state, runs anomaly detection, and 
+#' writes the processed data to a csv
+#' 
+#' @param df The input dataframe
 processFoodAndHospitalityDataForState <- function(df) {
   state = df$State[1]
   print(paste('Exploring the food and hospitality data for ', state, sep=''))
   cleanedDf <- data.frame(timestamp = as.Date(df$Date), count = as.numeric(df$Value))
   print(head(cleanedDf))
+  # Use the AnomalyDetection library from Twitter to detect anomalies in time series data
   res = AnomalyDetectionTs(cleanedDf, max_anoms = 0.02, direction = 'pos', plot = TRUE)
   if (nrow(res$anoms) == 0) {
     print('No anomalies detected in the time series data')
@@ -136,11 +164,16 @@ processFoodAndHospitalityDataForState <- function(df) {
   write.csv(cleanedDf, paste(processedDataPath, foodAndHospitalityCsv(state), sep = '/'), row.names = FALSE)
 }
 
+#' Processes food manufacturing data per state, runs anomaly detection, and 
+#' writes the processed data to a csv
+#' 
+#' @param df The input dataframe
 processFoodManufacturingDataForState <- function(df) {
   state = df$State[1]
   print(paste('Exploring the food manufacturing data for ', state, sep=''))
   cleanedDf <- data.frame(timestamp = as.Date(df$Date), count = as.numeric(df$Value))
   print(head(cleanedDf))
+  # Use the AnomalyDetection library from Twitter to detect anomalies in time series data
   res = AnomalyDetectionTs(cleanedDf, max_anoms = 0.02, direction = 'pos')
   if (nrow(res$anoms) == 0) {
     print('No anomalies detected in the time series data')
@@ -155,11 +188,14 @@ processFoodManufacturingDataForState <- function(df) {
   write.csv(cleanedDf, paste(processedDataPath, foodManufacturingCsv(state), sep = '/'), row.names = FALSE)
 }
 
+#' Visualizes the food and hospitality data per state using ggplot and plotly
+#' 
+#' @param df The input dataframe
+#' @param filename The filename containing the state
 visualizeFoodAndHospitalityDataForState <- function(df, filename) {
   state <- sub(foodAndHospitalitySuffix, '', filename)
+  print('Creating a plot of the cleaned food and hospitality data for')
   print(state)
-  print(head(df))
-  print('Creating a plot of the cleaned food and hospitality data')
   df$timestamp <- as.Date(df$timestamp)
   plotColor <- randomColor()
   p <- df %>%
@@ -174,11 +210,14 @@ visualizeFoodAndHospitalityDataForState <- function(df, filename) {
   htmlwidgets::saveWidget(as_widget(p), paste(processedDataVisualizations, paste(state, '-employment-food-and-hospitality.html', sep = ''), sep = '/'))
 }
 
+#' Visualizes the food manufacturing employment data per state using ggplot and plotly
+#' 
+#' @param df The input dataframe
+#' @param filename The filename containing the state
 visualizeFoodManufacturingForState <- function(df, filename) {
   state <- sub(foodManufacturingSuffix, '', filename)
+  print('Creating a plot of the cleaned food manufacturing data for ')
   print(state)
-  print(head(df))
-  print('Creating a plot of the cleaned food manufacturing data')
   df$timestamp <- as.Date(df$timestamp)
   plotColor <- randomColor()
   p <- df %>%
@@ -193,6 +232,11 @@ visualizeFoodManufacturingForState <- function(df, filename) {
   htmlwidgets::saveWidget(as_widget(p), paste(processedDataVisualizations, paste(state, '-employment-food-manufacturing.html', sep = ''), sep = '/'))
 }
 
+#' Stores a file in S3
+#' 
+#' @param file A file
+#' @param suffix The type of data. Used to strip from the filename for cleaning purposes
+#' @param directory The inner directory used to store the data in S3
 storeDataInS3 <- function(file, suffix, directory) {
   folderStructure <- unlist(strsplit(file, split = '/'))
   s3FilePath <- paste(folderStructure[1], directory, sub(suffix, '', folderStructure[2]), sep = '/')
@@ -201,6 +245,8 @@ storeDataInS3 <- function(file, suffix, directory) {
   put_object(file = file, object = s3FilePath, bucket = 'datastore.portfolio.sampastoriza.com')
   print('Uploaded file to S3 successfully')
 }
+
+# -------------------------- Control Panel Processor -------------------------- 
 
 if (retrieveRawData) {
   if (retrieveLAHRawData) {
@@ -276,4 +322,5 @@ if (uploadDataToS3) {
     lapply(allFiles, FUN = function(f) { storeDataInS3(f, foodManufacturingSuffix, 'food_manufacturing_employment') })
   }
 }
-  
+
+# ------------------------------------------------------------------------------

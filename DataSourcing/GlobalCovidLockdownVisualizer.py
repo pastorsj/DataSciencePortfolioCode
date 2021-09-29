@@ -13,7 +13,7 @@ class GlobalCovidLockdownVisualizer:
     def visualize_global_lockdowns(self):
         df = pd.read_csv(self._lockdown_file_path)
         df['Location'] = df['Place'] + ', ' + df['Country']
-        df[['StartDate', 'EndDate']] = df[['Start date', 'End date']].apply(pd.to_datetime)
+        df[['StartDate', 'EndDate']] = df[['StartDate', 'EndDate']].apply(pd.to_datetime)
         df['Length'] = (df['EndDate'] - df['StartDate']).dt.days
         fig = px.timeline(df, x_start="StartDate", x_end="EndDate", y="Location", color="Length")
         fig.update_yaxes(autorange="reversed")
@@ -26,7 +26,7 @@ class GlobalCovidLockdownVisualizer:
         df = df[(df['Country'] == 'United States') & (df['Confirmed'])]
         print(df)
         df['Location'] = df['Place'] + ', ' + df['Country']
-        df[['StartDate', 'EndDate']] = df[['Start date', 'End date']].apply(pd.to_datetime)
+        df[['StartDate', 'EndDate']] = df[['StartDate', 'EndDate']].apply(pd.to_datetime)
         df['Length'] = (df['EndDate'] - df['StartDate']).dt.days
         fig = px.timeline(df, x_start="StartDate", x_end="EndDate", y="Location", color="Length")
         fig.update_yaxes(autorange="reversed")

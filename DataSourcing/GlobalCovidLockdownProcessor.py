@@ -18,7 +18,7 @@ class GlobalCovidLockdownProcessor:
 
     def process_global_lockdown_data(self):
         df = pd.read_csv(self._lockdown_file_path)
-        df[['StartDate', 'EndDate']] = df[['Start date', 'End date']].apply(pd.to_datetime)
+        df[['StartDate', 'EndDate']] = df[['StartDate', 'EndDate']].apply(pd.to_datetime)
         united_states = df[(df['Country'] == 'United States') & (df['Confirmed'])]
         print(len(united_states))
 
@@ -56,4 +56,5 @@ if __name__ == '__main__':
     from dotenv import load_dotenv
     from FileStorage import FileStorage
     load_dotenv()
+    GlobalCovidLockdownProcessor(FileStorage(), s3.S3_API()).process_global_lockdown_data()
     GlobalCovidLockdownProcessor(FileStorage(), s3.S3_API()).store_processed_data()

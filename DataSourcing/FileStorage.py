@@ -31,7 +31,7 @@ class FileStorage:
     def store_df_as_file(self, filename, df):
         file_path = f'{self._raw_base_path}/{filename}'
         self.create_directory_if_not_exists(file_path)
-        df.to_csv(file_path)
+        df.to_csv(file_path, index=False)
 
     def store_processed_df_as_file(self, filename, df):
         file_path = f'{self._processed_base_path}/{filename}'

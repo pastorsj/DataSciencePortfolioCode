@@ -14,6 +14,8 @@ class GlobalCovidLockdownData:
         lockdown_data = pd.read_csv(self._lockdown_api)
         print(lockdown_data.head())
         print('Saving to file')
+        lockdown_data[['StartDate', 'EndDate']] = lockdown_data[['Start date', 'End date']]
+        lockdown_data = lockdown_data.drop(['Start date', 'End date'], axis=1)
         self._file_storage.store_df_as_file('lockdown_data/lockdown_data.csv', lockdown_data)
 
     def store_raw_data(self):

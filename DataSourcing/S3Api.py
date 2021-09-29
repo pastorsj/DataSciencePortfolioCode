@@ -99,3 +99,7 @@ class S3Api:
         """
         s3_object = self._s3.Object(self._s3_bucket, f'{location.value}/{file_name}')
         s3_object.put(Body=svg, ContentType='image/svg+xml')
+
+    def upload_bytes(self, content, file_name, location):
+        s3_object = self._s3.Object(self._s3_bucket, f'{location.value}/{file_name}')
+        s3_object.put(Body=content)

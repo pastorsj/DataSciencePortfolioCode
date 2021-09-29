@@ -1,9 +1,13 @@
 from bs4 import BeautifulSoup
 import requests
 import re
+import S3Api
+from datetime import datetime
+import json
+import glob
 
 # Constants
-STORE_DATA = False
+STORE_DATA = True
 
 
 class HouseholdSurveysApi:
@@ -25,6 +29,7 @@ class HouseholdSurveysApi:
         ----------
         """
         self._household_surveys_endpoint = 'https://www2.census.gov/programs-surveys/demo/tables/hhp/'
+        self._household_surveys_data_table_endpoint = 'https://www.census.gov/programs-surveys/household-pulse-survey/data.html'
         self._file_storage = file_storage
         self._s3_api = s3_api
 
@@ -39,6 +44,8 @@ class HouseholdSurveysApi:
 
         self.save_survey_data(survey_data)
         print('Saved all surveys')
+
+        self.retrieve_household_survey_dates()
         return survey_data
 
     def retrieve_survey_years(self, soup):
@@ -137,17 +144,50 @@ class HouseholdSurveysApi:
                     response = requests.get(survey_endpoint)
                     self._file_storage.store_as_file_in_bytes(f'survey_data/{survey_year}/{survey_week}/{survey}', response.content)
 
+    def retrieve_household_survey_dates(self):
+        response = requests.get(self._household_surveys_data_table_endpoint)
+        soup = BeautifulSoup(response.text, 'lxml')
+        result = soup.find_all('a', attrs={'title': re.compile(r'Week [0-9]{1,2} Household Pulse Survey:')})
+        weekly_data = [(r.get('href'), r.get('title')) for r in result]
+        week_regex = re.compile(r'Week [0-9]{1,2}')
+        year_regex = re.compile(r'\d{4}')
+
+        print(weekly_data)
+        map_of_dates = {}
+        for entry in weekly_data:
+            week = week_regex.match(entry[1]).group(0).replace('Week ', '')
+            year = list(filter(lambda x: year_regex.match(x) is not None, entry[0].split('/')))[0]
+            date = ' '.join(entry[1].split(' – ')[0].split(' ')[-2:]) + ' ' + year
+            actual_date = datetime.strptime(date, '%B %d %Y')
+            map_of_dates[week] = actual_date.strftime('%Y-%m-%d')
+
+        print(map_of_dates)
+        formatted_contents = json.dumps(map_of_dates, indent=4, sort_keys=True)
+        self._file_storage.store_as_file(f'survey_data/survey_metadata.json', formatted_contents)
+
     def store_survey_data(self):
         print('Store raw survey data in S3')
 
+        processed_files = list(glob.iglob('raw_data/survey_data/**/*.xlsx', recursive=True))
+        for file in processed_files:
+            print('Opening file', file)
+            contents = open(file, 'rb')
+            print('Uploading', file, 'to S3')
+            self._s3_api.upload_bytes(contents, file.replace('raw_data/', ''), S3Api.S3Location.RAW_DATA)
+            contents.close()
+
+        print('Uploaded all files')
+
 
 if __name__ == '__main__':
+    from dotenv import load_dotenv
     from FileStorage import FileStorage
+    load_dotenv()
 
-    household_surveys_instance = HouseholdSurveysApi(FileStorage())
+    household_surveys_instance = HouseholdSurveysApi(FileStorage(), S3Api.S3Api())
 
-    print('Retrieving raw household survey data')
-    household_surveys_instance.retrieve_survey_data()
+    # print('Retrieving raw household survey data')
+    # household_surveys_instance.retrieve_survey_data()
 
     if STORE_DATA:
         print('Storing raw household survey data')

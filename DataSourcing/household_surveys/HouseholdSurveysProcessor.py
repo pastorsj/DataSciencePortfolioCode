@@ -4,10 +4,11 @@ import re
 from openpyxl import load_workbook
 import pandas as pd
 import numpy
+import json
+import S3Api
 
 # Constants
 STORE_DATA = False
-
 
 class HouseholdSurveysProcessor:
     """Processes household survey data in csv files"""
@@ -95,6 +96,7 @@ class HouseholdSurveysProcessor:
         Consolidate the survey data by grouped the initially processed survey files by state and
         normalizing the population answering the survey questions
         """
+        survey_metadata = json.load(open('raw_data/survey_data/survey_metadata.json', 'r'))
         for survey_data in self._processed_survey_data:
             processed_data_folder = self._file_storage.get_processed_base_path() + survey_data['input_folder']
             # In some cases, we are not normalizing the data (for standard errors)
@@ -112,6 +114,7 @@ class HouseholdSurveysProcessor:
                     state = group[0]
                     frame = group[1]
                     frame['Week'] = extracted_week
+                    frame['Date'] = survey_metadata[extracted_week]
                     for column in self._columns[3:]:
                         frame[column] = frame[column].apply(lambda x: 0 if str(x).strip() == '-' else numpy.float32(x))
 
@@ -258,8 +261,10 @@ class HouseholdSurveysProcessor:
 if __name__ == '__main__':
     from FileStorage import FileStorage
 
-    household_surveys_processor_instance = HouseholdSurveysProcessor(FileStorage())
+    household_surveys_processor_instance = HouseholdSurveysProcessor(FileStorage(), S3Api.S3Api())
 
+    print('Processing survey data')
+    household_surveys_processor_instance.process_survey_data()
     print('Consolidating survey data')
     household_surveys_processor_instance.consolidate_survey_data()
 

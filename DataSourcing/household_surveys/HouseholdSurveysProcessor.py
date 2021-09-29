@@ -3,16 +3,33 @@ import glob
 import re
 from openpyxl import load_workbook
 import pandas as pd
-import pprint
 import numpy
 
-class HouseholdSurveysProcessor:
+# Constants
+STORE_DATA = False
 
-    def __init__(self, file_storage):
+
+class HouseholdSurveysProcessor:
+    """Processes household survey data in csv files"""
+
+    def __init__(self, file_storage, s3_api):
+        """ Create a new instance of the HouseholdSurveysProcessor class
+
+        Parameters
+        ----------
+        :param file_storage: FileStorage, Required
+            The file storage class used to store raw/processed data
+        :param s3_api: S3_API, Required
+            The S3 api wrapper class used to store data in AWS S3
+
+        ----------
+        """
         self._survey_data_folder = 'survey_data'
         self._input_base_path = f'{file_storage.get_raw_base_path()}/{self._survey_data_folder}/'
+        # Some filters for the raw xlsx files
         self._food_sufficiency_filter = 'food sufficiency'
         self._children_information_filter = 'with children'
+        # The desired breakdown characteristics from each survey
         self._characteristics = [{'topic': 'total', 'characteristic': 'total', 'exact_match': True},
                                  {'topic': 'age', 'characteristic': '18 - 24', 'exact_match': True},
                                  {'topic': 'age', 'characteristic': '25 - 39', 'exact_match': True},
@@ -26,6 +43,7 @@ class HouseholdSurveysProcessor:
                                  {'topic': 'race', 'characteristic': 'black alone', 'exact_match': False},
                                  {'topic': 'race', 'characteristic': 'asian alone', 'exact_match': False},
                                  {'topic': 'race', 'characteristic': 'two or more races', 'exact_match': False}]
+        # The list of columns for each csv
         self._columns = ['State',
                          'Topic',
                          'Characteristic',
@@ -35,27 +53,36 @@ class HouseholdSurveysProcessor:
                          'Sometimes not enough to eat',
                          'Often not enough to eat',
                          'Did not report']
+        # The map of processed data folders
         self._processed_survey_data = [
-            {'input_folder': '/survey_data/standard/all/', 'output_folder': '/consolidated_survey_data/standard/all/', 'normalized_data': True},
-            {'input_folder': '/survey_data/standard/children/', 'output_folder': '/consolidated_survey_data/standard/children/', 'normalized_data': True},
-            {'input_folder': '/survey_data/errors/all/', 'output_folder': '/consolidated_survey_data/errors/all/', 'normalized_data': False},
-            {'input_folder': '/survey_data/errors/children/', 'output_folder': '/consolidated_survey_data/errors/children/', 'normalized_data': False}
+            {'input_folder': '/survey_data/standard/all/', 'output_folder': '/consolidated_survey_data/standard/all/',
+             'normalized_data': True},
+            {'input_folder': '/survey_data/standard/children/',
+             'output_folder': '/consolidated_survey_data/standard/children/', 'normalized_data': True},
+            {'input_folder': '/survey_data/errors/all/', 'output_folder': '/consolidated_survey_data/errors/all/',
+             'normalized_data': False},
+            {'input_folder': '/survey_data/errors/children/',
+             'output_folder': '/consolidated_survey_data/errors/children/', 'normalized_data': False}
         ]
-        # self._characteristics = ['hispanic or latino']
         self._file_storage = file_storage
+        self._s3_api = s3_api
 
     def process_survey_data(self):
+        """Processes each survey file"""
         survey_files = self.retrieve_survey_files()
         print('Survey Files', survey_files)
         for survey_file in survey_files:
-            # survey_file = 'raw_data/survey_data/2020/wk1/food3b_week1.xlsx'
             wb = load_workbook(survey_file)
             print('Reading the workbook and processing into a csv', survey_file)
+            # If the file contains information on food sufficiency and does not contain data prior to Covid19,
+            # continue processing the file
             if self.__workbook_contains_food_sufficiency(wb) and not self.__workbook_contains_prior_to_covid_19(wb):
                 print('Contains food sufficiency information', survey_file)
 
+                # Survey files sometimes contain information on standard errors
                 contains_errors = self.__file_contains_standard_errors(survey_file)
                 print('Does it contain standard errors?', contains_errors)
+                # Survey files sometimes contain information on families with children versus without
                 contains_child_info = self.workbook_includes_information_on_children(wb)
                 print('Does it include information on children?', contains_child_info)
 
@@ -64,8 +91,13 @@ class HouseholdSurveysProcessor:
         wb.close()
 
     def consolidate_survey_data(self):
+        """
+        Consolidate the survey data by grouped the initially processed survey files by state and
+        normalizing the population answering the survey questions
+        """
         for survey_data in self._processed_survey_data:
             processed_data_folder = self._file_storage.get_processed_base_path() + survey_data['input_folder']
+            # In some cases, we are not normalizing the data (for standard errors)
             normalized_data = survey_data['normalized_data']
             processed_files = list(glob.iglob(processed_data_folder + '*.csv'))
             consolidated_data = {}
@@ -87,6 +119,7 @@ class HouseholdSurveysProcessor:
                         normalized_frame = frame.copy(deep=True)
                         total_row = frame[frame['Characteristic'] == 'total']
                         total = numpy.float32(total_row['Total'].values[0])
+                        # Normalize the totals
                         for column in self._columns[3:]:
                             normalized_frame[column] = normalized_frame[column].apply(lambda x: x / total)
 
@@ -96,7 +129,8 @@ class HouseholdSurveysProcessor:
                         consolidated_data[state] = frame
 
                     if normalized_data and state in consolidated_normalized_data:
-                        consolidated_normalized_data[state] = consolidated_normalized_data[state].append(normalized_frame)
+                        consolidated_normalized_data[state] = consolidated_normalized_data[state].append(
+                            normalized_frame)
                     elif normalized_data:
                         consolidated_normalized_data[state] = normalized_frame
 
@@ -114,26 +148,75 @@ class HouseholdSurveysProcessor:
                     consolidated_normalized_data[key].reset_index(drop=True, inplace=True)
                     consolidated_normalized_data[key].to_csv(consolidated_output_file, index=False)
 
-
     def retrieve_survey_files(self):
+        """Retrieve all raw survey files"""
         return list(glob.iglob(self._input_base_path + '**/*.xlsx', recursive=True))
 
     def __workbook_contains_food_sufficiency(self, wb):
+        """Determines whether the workbook contains information on food sufficiency
+
+        Parameters
+        ----------
+        :param wb: openpyxl.Workbook, Required
+            The data structure containing the excel workbook
+
+        ----------
+        """
         first_cell = wb['US']['A1'].value
         return self._food_sufficiency_filter in str(first_cell).lower()
 
     def __workbook_contains_prior_to_covid_19(self, wb):
+        """Determines whether the workbook contains information prior to Covid19
+
+        Parameters
+        ----------
+        :param wb: openpyxl.Workbook, Required
+            The data structure containing the excel workbook
+
+        ----------
+        """
         first_cell = wb['US']['A1'].value
         return 'prior to covid-19' in str(first_cell).lower()
 
-    def __file_contains_standard_errors(self, filepath):
-        return '_se_' in filepath
+    def __file_contains_standard_errors(self, file_path):
+        """Determines whether the file contains standard errors
+
+        Parameters
+        ----------
+        :param file_path: String, Required
+            The path of the file
+
+        ----------
+        """
+        return '_se_' in file_path
 
     def workbook_includes_information_on_children(self, wb):
+        """Determines whether the file contains information on children
+
+        Parameters
+        ----------
+        :param wb: openpyxl.Workbook, Required
+            The data structure containing the excel workbook
+
+        ----------
+        """
         first_cell = wb['US']['A1'].value
         return self._children_information_filter in str(first_cell).lower()
 
     def __process_workbook(self, wb, contains_errors, contains_child_info):
+        """Processes each individual workbook
+
+        Parameters
+        ----------
+        :param wb: openpyxl.Workbook, Required
+            The data structure containing the excel workbook
+        :param contains_errors: Boolean, Required
+            Whether the workbook contains standard errors rather than normal values
+        :param contains_child_info: Boolean, Required
+            Whether the workbook contains informatin on families with children
+
+        ----------
+        """
         sheet_names = wb.sheetnames
         r = re.compile(r'[A-Z]{2}')
         filtered_sheet_names = list(filter(r.match, sheet_names))
@@ -153,11 +236,10 @@ class HouseholdSurveysProcessor:
                     for row in sheet.iter_rows():
                         if row[0].value is not None:
                             row_title = row[0].value.lower().strip()
-                            if row_title == characteristic or (not exact_match and row_title.startswith(characteristic)):
+                            if row_title == characteristic or (
+                                    not exact_match and row_title.startswith(characteristic)):
                                 output += ','.join([str(statistic.value) for statistic in row[1:]]) + '\n'
                                 break
-
-
 
         output_path = '/'.join([
             self._survey_data_folder,
@@ -169,6 +251,18 @@ class HouseholdSurveysProcessor:
         self._file_storage.store_as_processed_file(output_path, output)
 
 
+    def store_survey_data(self):
+        print('Store processed survey data in S3')
+
+
 if __name__ == '__main__':
     from FileStorage import FileStorage
-    HouseholdSurveysProcessor(FileStorage()).consolidate_survey_data()
+
+    household_surveys_processor_instance = HouseholdSurveysProcessor(FileStorage())
+
+    print('Consolidating survey data')
+    household_surveys_processor_instance.consolidate_survey_data()
+
+    if STORE_DATA:
+        print('Storing processed survey data in S3')
+        household_surveys_processor_instance.store_survey_data()

@@ -18,7 +18,7 @@ class CustomSearchDataVisualizer:
         :param file_storage: FileStorage, Required
             The file storage class used to store raw/processed data
         :param s3_api: S3_API, Required
-            The S3 api wrapper class used to store data in AWS S#
+            The S3 api wrapper class used to store data in AWS S3
 
         ----------
         """

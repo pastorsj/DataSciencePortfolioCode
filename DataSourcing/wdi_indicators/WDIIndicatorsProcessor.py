@@ -7,6 +7,7 @@ class WDIIndicatorsProcessor:
     """Retrieve WDI Indicators from the World Bank"""
 
     def __init__(self):
+        """Creates a new instance of the WDIIndicatorsProcessor class"""
         self._wdi_data = 'raw_data/wdi_data/wdi_data.csv'
 
     def visualize_wdi_data(self, statistic, country_code):
@@ -27,6 +28,7 @@ class WDIIndicatorsProcessor:
         plt.ylabel('Population (in billions)')
         plt.title('World population over time')
         plt.show()
+
 
 if __name__ == '__main__':
     WDIIndicatorsProcessor().visualize_wdi_data('SP.POP.TOTL', 'WLD')

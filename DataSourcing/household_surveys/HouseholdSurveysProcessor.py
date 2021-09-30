@@ -8,7 +8,7 @@ import json
 import S3Api
 
 # Constants
-STORE_DATA = False
+STORE_DATA = True
 
 class HouseholdSurveysProcessor:
     """Processes household survey data in csv files"""
@@ -253,20 +253,31 @@ class HouseholdSurveysProcessor:
         print(output_path)
         self._file_storage.store_as_processed_file(output_path, output)
 
-
     def store_survey_data(self):
         print('Store processed survey data in S3')
 
+        processed_files = list(glob.iglob('processed_data/consolidated_survey_data/**/*.csv', recursive=True))
+        for file in processed_files:
+            print('Opening file', file)
+            contents = open(file, 'rb')
+            print('Uploading', file, 'to S3')
+            self._s3_api.upload_bytes(contents, file.replace('processed_data/', ''), S3Api.S3Location.PROCESSED_DATA)
+            contents.close()
+
+        print('Uploaded all files')
+
 
 if __name__ == '__main__':
+    from dotenv import load_dotenv
     from FileStorage import FileStorage
+    load_dotenv()
 
     household_surveys_processor_instance = HouseholdSurveysProcessor(FileStorage(), S3Api.S3Api())
 
-    print('Processing survey data')
-    household_surveys_processor_instance.process_survey_data()
-    print('Consolidating survey data')
-    household_surveys_processor_instance.consolidate_survey_data()
+    # print('Processing survey data')
+    # household_surveys_processor_instance.process_survey_data()
+    # print('Consolidating survey data')
+    # household_surveys_processor_instance.consolidate_survey_data()
 
     if STORE_DATA:
         print('Storing processed survey data in S3')

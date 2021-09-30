@@ -3,6 +3,8 @@ import pandas as pd
 import os
 import S3Api
 import us
+import glob
+import codecs
 
 
 STORE_DATA = False
@@ -33,7 +35,18 @@ class HouseholdSurveysProcessedDataVisualizer:
             fig.write_html(output_file)
 
     def store_survey_data(self):
-        print('Store processed survey data visualizations in S3')
+        print('Store processed survey data in S3')
+
+        processed_files = list(glob.iglob('processed_data_visualizations/survey_data/**/*.html', recursive=True))
+        for file in processed_files:
+            print('Opening file', file)
+            contents = codecs.open(file, 'r')
+            print('Uploading', file, 'to S3')
+            self._s3_api.upload_html(contents.read(), file.replace('processed_data_visualizations/', ''), S3Api.S3Location.PROCESSED_DATA_VISUALIZATIONS)
+            contents.close()
+
+        print('Uploaded all files')
+
 
 if __name__ == '__main__':
     from dotenv import load_dotenv
@@ -52,4 +65,5 @@ if __name__ == '__main__':
         output_file_path='processed_data_visualizations/survey_data/children/')
 
     if STORE_DATA:
+        print('Storing processed survey data visualizations')
         data_visualizer.store_survey_data()

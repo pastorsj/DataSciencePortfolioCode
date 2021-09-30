@@ -7,7 +7,7 @@ import json
 import glob
 
 # Constants
-STORE_DATA = True
+STORE_DATA = False
 
 
 class HouseholdSurveysApi:
@@ -186,8 +186,8 @@ if __name__ == '__main__':
 
     household_surveys_instance = HouseholdSurveysApi(FileStorage(), S3Api.S3Api())
 
-    # print('Retrieving raw household survey data')
-    # household_surveys_instance.retrieve_survey_data()
+    print('Retrieving raw household survey data')
+    household_surveys_instance.retrieve_survey_data()
 
     if STORE_DATA:
         print('Storing raw household survey data')

@@ -7,6 +7,7 @@
 .idea/
 __pycache__/
 *.png
+*.pdf
 *.html
 
 data_raw/

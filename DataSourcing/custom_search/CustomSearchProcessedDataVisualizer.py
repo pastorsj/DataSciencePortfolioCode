@@ -1,7 +1,9 @@
 import pandas as pd
-from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator
+from wordcloud import WordCloud, STOPWORDS
+from sklearn.feature_extraction.text import CountVectorizer
 import matplotlib.pyplot as plt
 import S3Api
+import pprint
 
 STORE_DATA = False
 
@@ -22,32 +24,38 @@ class CustomSearchProcessedDataVisualizer:
         """
         self._file_storage = file_storage
         self._s3_api = s3_api
+        self.__processed_data_location = 'processed_data/search_results/cleaned_search_data.csv'
+        self.__processed_visualizations_location = 'processed_data_visualizations'
 
-    def visualize_processed_search_data(self, input_file_path, output_file_path):
-        """ Visualizes the processed search data
+    def visualize_processed_search_data(self):
+        """ Visualizes the processed search data"""
+        processed_df = pd.read_csv(self.__processed_data_location)
+        for group in processed_df.groupby(by=['topic']):
+            text_data = " ".join(group[1]['text'].to_list())
+            topic = group[0]
+            print('Generating wordcloud for topic', topic)
+            wordcloud = WordCloud(stopwords=STOPWORDS, background_color="white").generate(text_data)
+            plt.figure()
+            plt.imshow(wordcloud, interpolation="bilinear")
+            plt.axis("off")
+            plt.show()
+            print('Saving image to file')
+            # Save as an svg for scaling purposes
+            wordcloud_svg = wordcloud.to_svg(embed_font=True)
+            f = open(f'{self.__processed_visualizations_location}/{topic}_wordcloud.svg', "w+")
+            f.write(wordcloud_svg)
+            f.close()
 
-        Parameters
-        ----------
-        :param input_file_path: String, Required
-            The path to the input file containing the processed vectorized search data
-        :param output_file_path: String, Required
-            The path to the output file to write the processed data visualization
+            vectorizer = CountVectorizer(stop_words="english")
+            matrix = vectorizer.fit_transform(group[1]['text'])
+            feature_names = vectorizer.get_feature_names()
+            sums = matrix.sum(axis=0).tolist()[0]
+            print(feature_names)
+            print(sums)
+            sorted_frequencies = sorted(zip(feature_names, sums), key=lambda x: -x[1])
+            print(sorted_frequencies[0:10])
 
-        ----------
-        """
-        df = pd.read_csv(input_file_path)
-        frequencies = df.T.sum(axis=1)
-        wordcloud = WordCloud(stopwords=STOPWORDS, background_color="white").generate_from_frequencies(frequencies)
-        plt.figure()
-        plt.imshow(wordcloud, interpolation="bilinear")
-        plt.axis("off")
-        plt.show()
-        print('Saving image to file')
-        # Save as an svg for scaling purposes
-        wordcloud_svg = wordcloud.to_svg(embed_font=True)
-        f = open(output_file_path, "w+")
-        f.write(wordcloud_svg)
-        f.close()
+
 
     def store_visualized_data(self, file_path):
         """Stores the processed visualization in S3
@@ -75,15 +83,8 @@ if __name__ == '__main__':
 
     search_data_visualizer = CustomSearchProcessedDataVisualizer(FileStorage(), S3Api.S3Api())
 
-    print('Visualizing covid search results using a wordcloud')
-    search_data_visualizer.visualize_processed_search_data(
-        input_file_path='../processed_data/search_results/covid-search-results.csv',
-        output_file_path='../processed_data_visualizations/search_results/covid-search-results.svg')
-
-    print('Visualizing h1n1 search results using a wordcloud')
-    search_data_visualizer.visualize_processed_search_data(
-        input_file_path='../processed_data/search_results/h1n1-search-results.csv',
-        output_file_path='../processed_data_visualizations/search_results/h1n1-search-results.svg')
+    print('Visualizing search results using a wordcloud')
+    search_data_visualizer.visualize_processed_search_data()
 
     if STORE_DATA:
         print('Storing visualized covid search results in S3')

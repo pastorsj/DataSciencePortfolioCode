@@ -4,6 +4,7 @@ import requests
 from readability import Document
 import html2text
 import S3Api
+import pandas as pd
 
 # Constants
 STORE_DATA = False
@@ -27,7 +28,7 @@ class CustomSearchData:
         self._file_storage = file_storage
         self._s3_api = s3_api
 
-    def search(self, number_of_queries, query, file_path):
+    def search(self, number_of_queries, query, file_path, topic):
         """Utilizes the Google Search API to search for data given a query
 
         Parameters
@@ -56,9 +57,9 @@ class CustomSearchData:
             results += res['items']
 
         print('Scraping websites for data')
-        self.scrape_google_results(results, file_path)
+        self.scrape_google_results(results, file_path, topic)
 
-    def scrape_google_results(self, search_results, file_path):
+    def scrape_google_results(self, search_results, file_path, topic):
         """Scrapes the websites that are returned from the Google Search API for text data
 
         Parameters
@@ -83,6 +84,7 @@ class CustomSearchData:
                 text_results.append({
                     'link': result['link'],
                     'title': doc.title(),
+                    'topic': topic,
                     'text': html2text.html2text(summary_of_article)
                 })
                 print('Appended information to results')
@@ -94,8 +96,9 @@ class CustomSearchData:
                 continue
 
         print('Scraped together', len(text_results), 'websites for information.')
-        formatted_contents = json.dumps(text_results, indent=4, sort_keys=True)
-        self._file_storage.store_as_file(file_path, formatted_contents)
+
+        df = pd.DataFrame(text_results)
+        self._file_storage.store_df_as_file(file_path, df)
 
     def store_raw_data(self, file_path):
         """Stores the raw data in S3
@@ -122,15 +125,27 @@ if __name__ == '__main__':
     load_dotenv()
     search_data_instance = CustomSearchData(FileStorage(), S3Api.S3Api())
     print('Scraping the google search api for covid 19 articles relating to food security')
-    search_data_instance.search(40, 'covid covid19 food security hunger', 'search_results/covid-search-results.json')
+    search_data_instance.search(40, 'covid covid19 affect food security hunger', 'search_results/covid-search-results.csv', 'covid')
 
-    print('Scraping the google search api for h1n1 articles relating to food security')
-    search_data_instance.search(40, 'h1n1 food security hunger', 'search_results/h1n1-search-results.json')
+    print('Scraping the google search api for locusts articles relating to food security')
+    search_data_instance.search(40, 'locusts affect food security hunger', 'search_results/locusts-search-results.csv', 'locusts')
+
+    print('Scraping the google search api for drought articles relating to food security')
+    search_data_instance.search(40, 'drought affect food security hunger', 'search_results/drought-search-results.csv', 'drought')
+
+    print('Scraping the google search api for war articles relating to food security')
+    search_data_instance.search(40, 'war fighting affect food security hunger', 'search_results/war-search-results.csv', 'war')
 
     if STORE_DATA:
         print('Storing covid search results in S3')
-        search_data_instance.store_raw_data('search_results/covid-search-results.json')
+        search_data_instance.store_raw_data('search_results/covid-search-results.csv')
 
-        print('Storing h1n1 search results in S3')
-        search_data_instance.store_raw_data('search_results/h1n1-search-results.json')
+        print('Storing locusts search results in S3')
+        search_data_instance.store_raw_data('search_results/locusts-search-results.csv')
+
+        print('Storing wildfire search results in S3')
+        search_data_instance.store_raw_data('search_results/wildfire-search-results.csv')
+
+        print('Storing war search results in S3')
+        search_data_instance.store_raw_data('search_results/war-search-results.csv')
 

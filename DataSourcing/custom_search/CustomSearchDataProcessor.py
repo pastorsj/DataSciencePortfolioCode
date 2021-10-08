@@ -1,11 +1,10 @@
-import numpy as np
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.feature_extraction import text
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 from nltk.stem import WordNetLemmatizer
 import nltk
-import json
 import pandas as pd
 import S3Api
+import glob
+import statistics
 
 # Constants
 STORE_DATA = False
@@ -19,7 +18,9 @@ class CustomSearchDataProcessor:
     def __init__(self, file_storage, s3_api):
         self._file_storage = file_storage
         self._s3_api = s3_api
-        self._additional_stop_words = ['title', 'journal', 'volume', 'author', 'scholar', 'article', 'issue']
+        self._additional_stop_words = ['title', 'journal', 'volume', 'author', 'scholar', 'article', 'issue', 'food',
+                                       'hunger', 'people', 'million', 'world', 'security', 'insecurity']
+        self._defined_stop_words = set(ENGLISH_STOP_WORDS.union(self._additional_stop_words))
 
     def filter_non_english_words(self, corpus):
         """ Filters, lowercases, and lemmatizes non english words using the nltk word list.
@@ -42,8 +43,9 @@ class CustomSearchDataProcessor:
         -------
         """
 
-        filtered_vocabulary = " ".join(lemmatizer.lemmatize(w.lower()) for w in nltk.wordpunct_tokenize(corpus) if w.lower() in words)
-        return filtered_vocabulary
+        filtered_vocabulary = [lemmatizer.lemmatize(w.lower()) for w in nltk.wordpunct_tokenize(corpus) if w.lower() in words]
+        filtered_vocabulary = [w for w in filtered_vocabulary if len(w) > 2 and w not in self._defined_stop_words]
+        return " ".join(filtered_vocabulary)
 
     def parse_text_data(self, input_file_path, output_file_path):
         """ Parses the text data and saves the output as a dataframe in a csv
@@ -57,22 +59,30 @@ class CustomSearchDataProcessor:
 
         ----------
         """
-        stop_words = text.ENGLISH_STOP_WORDS.union(self._additional_stop_words)
+        all_files = list(glob.iglob(f'{input_file_path}/*.csv', recursive=True))
+        frames = [pd.read_csv(f) for f in all_files]
+        search_df = pd.concat(frames)
+        print(search_df.shape[0])
+        search_df = search_df.drop_duplicates(subset=['link'])
+        print(search_df.shape[0])
+        print(search_df.columns)
 
-        with open(input_file_path, 'r') as f:
-            data = json.load(f)
+        search_df['text'] = search_df['text'].apply(self.filter_non_english_words)
+        print('Stats')
+        print('Max length of article', max(search_df['text']))
+        print('Min length of article', min(search_df['text'].str.len()))
+        print('Mean length of article', statistics.mean(search_df['text'].str.len()))
+        print('Median length of article', statistics.median(search_df['text'].str.len()))
+        print('Standard Deviation length of article', statistics.stdev(search_df['text'].str.len()))
+        lower_bound = 1000
+        upper_bound = statistics.mean(search_df['text'].str.len()) + statistics.stdev(search_df['text'].str.len())
+        search_df = search_df.loc[(search_df['text'].str.len() > lower_bound) & (search_df['text'].str.len() < upper_bound)]
 
-            print('Cleaning and vectorizing data')
-            text_data = np.array([self.filter_non_english_words(item['text']) for item in data])
-            # Using the CountVectorizer class to remove stop words and vectorize text data
-            vectorizer = CountVectorizer(stop_words=stop_words)
-            v = vectorizer.fit_transform(text_data)
-            vocab = vectorizer.get_feature_names()
-            values = v.toarray()
-            df = pd.DataFrame(values, columns=vocab)
-            print(df.head())
-            print('Saving processed data to file')
-            df.to_csv(output_file_path, index=False)
+        print(search_df.head())
+        print(search_df.shape[0])
+        print('Length of text', len(search_df['text'].to_list()))
+
+        search_df.to_csv(f'{output_file_path}/cleaned_search_data.csv', index=False)
 
     def store_processed_data(self, file_path):
         """Stores the processed data in S3
@@ -100,17 +110,9 @@ if __name__ == '__main__':
 
     print('Processing covid search result data')
     search_data.parse_text_data(
-        input_file_path='../raw_data/search_results/covid-search-results.json',
-        output_file_path='../processed_data/search_results/covid-search-results.csv')
-
-    print('Processing h1n1 search result data')
-    search_data.parse_text_data(
-        input_file_path='../raw_data/search_results/h1n1-search-results.json',
-        output_file_path='../processed_data/search_results/h1n1-search-results.csv')
+        input_file_path='raw_data/search_results',
+        output_file_path='processed_data/search_results')
 
     if STORE_DATA:
         print('Storing covid search results in S3')
-        search_data.store_processed_data('search_results/covid-search-results.csv')
-
-        print('Storing h1n1 search results in S3')
-        search_data.store_processed_data('search_results/h1n1-search-results.csv')
+        search_data.store_processed_data('search_results/cleaned_search_data.csv')

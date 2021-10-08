@@ -10,6 +10,8 @@ class S3Location(Enum):
     RAW_DATA_VISUALIZATIONS = 'raw_data_visualizations'
     PROCESSED_DATA = 'processed_data'
     PROCESSED_DATA_VISUALIZATIONS = 'processed_data_visualizations'
+    CLUSTERED_DATA = 'clustered_data'
+    CLUSTERED_DATA_VISUALIZATIONS = 'clustered_data_visualizations'
 
 
 class S3Api:
@@ -103,3 +105,7 @@ class S3Api:
     def upload_bytes(self, content, file_name, location):
         s3_object = self._s3.Object(self._s3_bucket, f'{location.value}/{file_name}')
         s3_object.put(Body=content)
+
+    def upload_png(self, png, file_name, location):
+        s3_object = self._s3.Object(self._s3_bucket, f'{location.value}/{file_name}')
+        s3_object.put(Body=png, ContentType='image/png')

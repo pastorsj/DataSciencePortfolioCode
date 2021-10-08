@@ -83,9 +83,7 @@ if __name__ == '__main__':
         output_file_path='../raw_data_visualizations/search_results/covid-search-results.svg')
 
     print('Visualizing h1n1 search results using a wordcloud')
-    search_data_visualizer.visualize_raw_search_data(
-        input_file_path='../raw_data/search_results/h1n1-search-results.json',
-        output_file_path='../raw_data_visualizations/search_results/h1n1-search-results.svg')
+    search_data_visualizer.visualize_raw_search_data()
 
     if STORE_DATA:
         print('Storing visualized covid search results in S3')

@@ -6,6 +6,7 @@ library(factoextra)
 library(dbscan)
 library(stats)
 library(svglite)
+library(aws.s3)
 
 
 #' Creates a directory if it does not exist yet
@@ -37,6 +38,7 @@ createDirectoryIfNotExists(clusteredDataVisualizations)
 combineProcessedData <- TRUE
 cleanProcessedData <- TRUE
 clusterRecordData <- TRUE
+uploadToS3 <- TRUE
 
 # Combining the data
 # Algorithm
@@ -391,6 +393,18 @@ runDensityClustering <- function(df, scaled.df) {
   return(df)
 }
 
+#' Stores a file in S3
+#' 
+#' @param file A file
+#' @param suffix The type of data. Used to strip from the filename for cleaning purposes
+#' @param directory The inner directory used to store the data in S3
+storeDataInS3 <- function(file) {
+  print('Storing file in s3')
+  print(file)
+  put_object(file = file, object = file, bucket = 'datastore.portfolio.sampastoriza.com')
+  print('Uploaded file to S3 successfully')
+}
+
 # Output the data, save to csv
 if (combineProcessedData) {
   df <- retrieveHouseholdSurveyData()
@@ -410,7 +424,6 @@ if (cleanProcessedData) {
 }
 
 # Cluster the data
-
 if (clusterRecordData) {
   df <- read.csv(paste(clusteredDataPath, 'processed_record_data.csv', sep = '/'))
   # Remove in lockdown label
@@ -426,4 +439,11 @@ if (clusterRecordData) {
   write.csv(df, 'clustered_record_data.csv')
 }
 
-# Decide what to summarize?
+# Upload data to S3
+
+if (uploadToS3) {
+  allFiles <- list.files(clusteredDataPath, full.names = TRUE, pattern = '*.csv')
+  print(allFiles)
+  lapply(allFiles, FUN = function(f) { storeDataInS3(f) })
+}
+

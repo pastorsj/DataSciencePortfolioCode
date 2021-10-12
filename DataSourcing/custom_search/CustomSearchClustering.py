@@ -98,8 +98,8 @@ class CustomSearchClustering:
         self.__plot_clusters(df, f'{normalized_label}_calculated_k_means', 'PC0_N', 'PC1_N', 'PC2_N', f'Plot of normalized clusters using K-Means ({vectorizer_type})')
         self.__plot_clusters(df, f'{normalized_label}_3_k_means', 'PC0_N', 'PC1_N', 'PC2_N', f'Plot of normalized clusters using K-Means (k=3) ({vectorizer_type})')
         self.__plot_clusters(df, f'{normalized_label}_4_k_means', 'PC0_N', 'PC1_N', 'PC2_N', f'Plot of normalized clusters using K-Means (k=4) ({vectorizer_type})')
-        self.__plot_clusters(df, f'{normalized_label}_6_k_means', 'PC0_N', 'PC1_N', 'PC2_N', f'Plot of normalized clusters using K-Means (k=5) ({vectorizer_type})')
-        self.__plot_clusters(df, f'{normalized_label}_8_k_means', 'PC0_N', 'PC1_N', 'PC2_N', f'Plot of normalized clusters using K-Means (k=6) ({vectorizer_type})')
+        self.__plot_clusters(df, f'{normalized_label}_6_k_means', 'PC0_N', 'PC1_N', 'PC2_N', f'Plot of normalized clusters using K-Means (k=6) ({vectorizer_type})')
+        self.__plot_clusters(df, f'{normalized_label}_8_k_means', 'PC0_N', 'PC1_N', 'PC2_N', f'Plot of normalized clusters using K-Means (k=8) ({vectorizer_type})')
         self.__plot_clusters(df, f'{normalized_label}_10_k_means', 'PC0_N', 'PC1_N', 'PC2_N', f'Plot of normalized clusters using K-Means (k=10) ({vectorizer_type})')
         self.__plot_clusters(df, f'{not_normalized_label}_calculated_k_means', 'PC0_NN', 'PC1_NN', 'PC2_NN', f'Plot of non normalized clusters using K-Means ({vectorizer_type})')
         self.__plot_clusters(df, f'{normalized_label}_3_hierarchical', 'PC0_N', 'PC1_N', 'PC2_N', f'Plot of normalized clusters using Hiearchical Clustering ({vectorizer_type}) (k=3)')
@@ -110,14 +110,14 @@ class CustomSearchClustering:
         self.__plot_clusters(df, f'{normalized_label}_density', 'PC0_N', 'PC1_N', 'PC2_N', f'Plot of normalized clusters using Density Scan ({vectorizer_type})')
 
         df = df.drop(columns=['text'])
-        df.to_csv(f'{self.__clustered_data_location}/clustered_search_data.csv')
+        df.to_csv(f'{self.__clustered_data_location}/clustered_search_data.csv', index=False)
 
     def __cluster(self, df, input_df, clustering_type, graph_prefix, vectorizer_type):
         list_of_inertias = []
         list_of_silhouette_scores = []
         k_range = list(range(2, 10))
         for k in k_range:
-            k_means = KMeans(k, max_iter=500)
+            k_means = KMeans(k, max_iter=1000)
             k_means.fit_predict(df)
 
             list_of_inertias.append(k_means.inertia_)
@@ -163,6 +163,9 @@ class CustomSearchClustering:
         plt.title(f'Plot of elbow method using Inertia -- {graph_prefix} ({vectorizer_type})')
         plt.savefig(f'{self.__clustered_visualizations_location}/elbow_method/elbow_method_{clustering_type}.png')
 
+        df = pd.DataFrame(data={'K': k_range, 'Inertia': list_of_inertias})
+        df.to_csv(f'{self.__clustered_data_location}/elbow_method/elbow_method_{clustering_type}.csv', index=False)
+
     def plot_silhouette_method(self, k_range, list_of_silhouette_scores, graph_prefix, vectorizer_type, clustering_type):
         print('Plotting silhouette method')
         plt.figure()
@@ -171,6 +174,9 @@ class CustomSearchClustering:
         plt.ylabel('Silhouette Score')
         plt.title(f'Plot of silhouette method -- {graph_prefix} ({vectorizer_type})')
         plt.savefig(f'{self.__clustered_visualizations_location}/silhouette_method/silhouette_method_{clustering_type}.png')
+
+        df = pd.DataFrame(data={'K': k_range, 'Silhouette Score': list_of_silhouette_scores})
+        df.to_csv(f'{self.__clustered_data_location}/silhouette_method/silhouette_method_{clustering_type}.csv', index=False)
 
     def __run_pca_analysis(self, df_normalized, input_df):
         print('Running PCA Analysis to reduce dimensionality')
@@ -216,7 +222,7 @@ class CustomSearchClustering:
             war=pd.NamedAgg(column='topic', aggfunc=lambda t: self.clusterByTopic(t, 'war'))
         )
         output_file = f'{self.__clustered_data_location}/clustering_statistics/{clustering_type}.csv'
-        statistics_df.to_csv(output_file)
+        statistics_df.to_csv(output_file, index=False)
         print(statistics_df)
 
 
@@ -297,7 +303,7 @@ class CustomSearchClustering:
             print('Successfully uploaded')
             png.close()
 
-        clustered_csv_data = list(glob.iglob(f'{self.__clustered_data_location}/*.csv', recursive=True))
+        clustered_csv_data = list(glob.iglob(f'{self.__clustered_data_location}/**/*.csv', recursive=True))
         for file in clustered_csv_data:
             print('Opening file', file)
             df = pd.read_csv(file)
@@ -305,7 +311,6 @@ class CustomSearchClustering:
             self._s3_api.upload_df(df, file.replace('clustered_data/', ''), S3Api.S3Location.CLUSTERED_DATA)
             print('Uploading', file, 'to S3')
             print('Successfully uploaded')
-            png.close()
 
         print('Uploaded all files')
 
@@ -322,9 +327,11 @@ if __name__ == '__main__':
     fs.create_directory_if_not_exists('clustered_data_visualizations/search_results/silhouette/')
     fs.create_directory_if_not_exists('clustered_data_visualizations/search_results/dendrogram/')
     fs.create_directory_if_not_exists('clustered_data/search_results/clustering_statistics/')
+    fs.create_directory_if_not_exists('clustered_data/search_results/elbow_method/')
+    fs.create_directory_if_not_exists('clustered_data/search_results/silhouette_method/')
 
     search_clustering = CustomSearchClustering(fs, S3Api.S3Api())
-    search_clustering.cluster_search_data()
+    #search_clustering.cluster_search_data()
 
     if STORE_DATA:
         search_clustering.store_clustered_search_data()

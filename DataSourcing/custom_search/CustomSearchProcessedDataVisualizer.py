@@ -3,9 +3,9 @@ from wordcloud import WordCloud, STOPWORDS
 from sklearn.feature_extraction.text import CountVectorizer
 import matplotlib.pyplot as plt
 import S3Api
-import pprint
+import glob
 
-STORE_DATA = False
+STORE_DATA = True
 
 class CustomSearchProcessedDataVisualizer:
     """Visualizes processed search data information obtained from the Google Search API using a wordcloud"""
@@ -25,7 +25,7 @@ class CustomSearchProcessedDataVisualizer:
         self._file_storage = file_storage
         self._s3_api = s3_api
         self.__processed_data_location = 'processed_data/search_results/cleaned_search_data.csv'
-        self.__processed_visualizations_location = 'processed_data_visualizations'
+        self.__processed_visualizations_location = 'processed_data_visualizations/search_results'
 
     def visualize_processed_search_data(self):
         """ Visualizes the processed search data"""
@@ -49,30 +49,35 @@ class CustomSearchProcessedDataVisualizer:
             vectorizer = CountVectorizer(stop_words="english")
             matrix = vectorizer.fit_transform(group[1]['text'])
             feature_names = vectorizer.get_feature_names()
+            values = matrix.toarray()
+            v_df = pd.DataFrame(values, columns=feature_names)
             sums = matrix.sum(axis=0).tolist()[0]
             print(feature_names)
             print(sums)
             sorted_frequencies = sorted(zip(feature_names, sums), key=lambda x: -x[1])
             print(sorted_frequencies[0:10])
+            v_df.to_csv(f'processed_data/search_results/{topic}_vectorized.csv')
 
+    def store_visualized_data(self):
+        """Stores the processed visualization in S3"""
+        svg_visualizations = list(glob.iglob(f'processed_data_visualizations/search_results/*.svg', recursive=True))
+        for file in svg_visualizations:
+            print('Opening file', file)
+            svg = open(file, "rb")
+            print('Attempting to upload processed visualized search data to s3')
+            self._s3_api.upload_svg(svg, file.replace('processed_data_visualizations/', ''), S3Api.S3Location.PROCESSED_DATA_VISUALIZATIONS)
+            print('Uploading', file, 'to S3')
+            print('Successfully uploaded')
+            svg.close()
 
-
-    def store_visualized_data(self, file_path):
-        """Stores the processed visualization in S3
-
-        Parameters
-        ----------
-        :param file_path: String, Required
-            The file path where the processed search result visualizations are stored
-
-        ----------
-        """
-        file = f'{self._file_storage.get_processed_visualizations_base_path()}/{file_path}'
-        print('Processing and storing in s3', file)
-        svg = open(file, "rb")
-        print('Attempting to upload processed visualized search data to s3')
-        self._s3_api.upload_svg(svg, file_path, S3Api.S3Location.PROCESSED_DATA_VISUALIZATIONS)
-        print('Successfully uploaded')
+        processed_data = list(glob.iglob(f'processed_data/search_results/*.csv', recursive=True))
+        for file in processed_data:
+            print('Opening file', file)
+            df = pd.read_csv(file)
+            print('Attempting to upload processed search data to s3')
+            self._s3_api.upload_df(df, file.replace('processed_data/', ''), S3Api.S3Location.PROCESSED_DATA)
+            print('Uploading', file, 'to S3')
+            print('Successfully uploaded')
 
 
 if __name__ == '__main__':
@@ -87,8 +92,5 @@ if __name__ == '__main__':
     search_data_visualizer.visualize_processed_search_data()
 
     if STORE_DATA:
-        print('Storing visualized covid search results in S3')
-        search_data_visualizer.store_visualized_data('search_results/covid-search-results.svg')
-
-        print('Storing visualized h1n1 search results in S3')
-        search_data_visualizer.store_visualized_data('search_results/h1n1-search-results.svg')
+        print('Storing visualized search results in S3')
+        search_data_visualizer.store_visualized_data()

@@ -8,6 +8,8 @@
 __pycache__/
 *.png
 *.pdf
+*.svg
+*.csv
 *.html
 
 data_raw/
@@ -15,3 +17,5 @@ processed_data/
 raw_data/
 raw_data_visualizations/
 processed_data_visualizations/
+clustered_data/
+clustered_data_visualizations/

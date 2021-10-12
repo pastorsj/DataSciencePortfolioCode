@@ -181,6 +181,9 @@ class CustomSearchClustering:
         components['topic'] = input_df['topic']
         return components
 
+    def clusterByTopic(self, cluster, topic):
+        return cluster.value_counts()[topic] if topic in cluster.value_counts() else 0
+
     def __plot_clusters(self, df, clustering_type, x, y, z, title):
         k_means_label = f'{clustering_type}_label'
         fig = px.scatter(df, x=x, y=y, text="topic", color=k_means_label, hover_data=['topic', 'link'], log_x=True,
@@ -204,6 +207,18 @@ class CustomSearchClustering:
 
         output_file = f'{self.__clustered_visualizations_location}/clustered_3d/{clustering_type}.html'
         fig3d.write_html(output_file)
+
+        print('Gathering Statistics')
+        statistics_df = df[['topic', k_means_label]].groupby([k_means_label]).agg(
+            covid=pd.NamedAgg(column='topic', aggfunc=lambda t: self.clusterByTopic(t, 'covid')),
+            drought=pd.NamedAgg(column='topic', aggfunc=lambda t: self.clusterByTopic(t, 'drought')),
+            locusts=pd.NamedAgg(column='topic', aggfunc=lambda t: self.clusterByTopic(t, 'locusts')),
+            war=pd.NamedAgg(column='topic', aggfunc=lambda t: self.clusterByTopic(t, 'war'))
+        )
+        output_file = f'{self.__clustered_data_location}/clustering_statistics/{clustering_type}.csv'
+        statistics_df.to_csv(output_file)
+        print(statistics_df)
+
 
     def __plot_silhouette_clusters(self, df, k_means, k_value, vectorizer_type, clustering_type):
         print('Plotting silhouette clusters', k_value)
@@ -306,7 +321,7 @@ if __name__ == '__main__':
     fs.create_directory_if_not_exists('clustered_data_visualizations/search_results/clustered_3d/')
     fs.create_directory_if_not_exists('clustered_data_visualizations/search_results/silhouette/')
     fs.create_directory_if_not_exists('clustered_data_visualizations/search_results/dendrogram/')
-    fs.create_directory_if_not_exists('clustered_data/search_results/')
+    fs.create_directory_if_not_exists('clustered_data/search_results/clustering_statistics/')
 
     search_clustering = CustomSearchClustering(fs, S3Api.S3Api())
     search_clustering.cluster_search_data()

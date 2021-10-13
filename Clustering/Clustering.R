@@ -35,8 +35,8 @@ createDirectoryIfNotExists(clusteredDataVisualizations)
 # Fred data employment in each state
 # Covid data
 
-combineProcessedData <- TRUE
-cleanProcessedData <- TRUE
+combineProcessedData <- FALSE
+cleanProcessedData <- FALSE
 clusterRecordData <- TRUE
 uploadToS3 <- TRUE
 
@@ -195,6 +195,9 @@ calculateDistanceMatrices <- function(df, scaled.df) {
   print(p)
   dev.off()
   
+  df.c <- as.data.frame(p$data)
+  write.csv(df.c, paste(clusteredDataPath, 'silhouette_euclidean_distance.csv', sep = '/'))
+  
   print('Attempting to plot gap statistic method for euclidean distance metric')
   p <- fviz_nbclust(
     as.matrix(scaled.df), 
@@ -207,12 +210,15 @@ calculateDistanceMatrices <- function(df, scaled.df) {
   print(p)
   dev.off()
   
+  df.c <- as.data.frame(p$data)
+  write.csv(df.c, paste(clusteredDataPath, 'gap_euclidean_distance.csv', sep = '/'))
+  
   print('Calculating manhattan distance matrix')
   dist.manhattan <- dist(scaled.df, method = "manhattan")
   write.csv(as.matrix(dist.manhattan), paste(clusteredDataPath, 'manhattan_distance.csv', sep = '/'))
   
   print('Visualizing manhattan distance matrix')
-  png(paste(clusteredDataVisualizations, 'manhattan_distance_matrix.png', sep = '/'))
+  png(paste(clusteredDataVisualizations, 'manhattan_distance_matrix_full.png', sep = '/'))
   p.d <- fviz_dist(
     dist.manhattan,
     order = TRUE,
@@ -225,7 +231,7 @@ calculateDistanceMatrices <- function(df, scaled.df) {
   
   print('hclust with manhattan distance matrix')
   fitWithManhattan <- hclust(dist.manhattan, method = "ward.D2")
-  png(paste(clusteredDataVisualizations, 'manhattan_distance_dendrogram.png', sep = '/'), width = 1200)
+  png(paste(clusteredDataVisualizations, 'manhattan_distance_dendrogram_full.png', sep = '/'), width = 1200)
   p <- plot(fitWithManhattan, labels = FALSE, main = "Cluster Dendrogram using Manhattan Distance")
   print(p)
   dev.off()
@@ -253,6 +259,9 @@ calculateDistanceMatrices <- function(df, scaled.df) {
   print(p)
   dev.off()
   
+  df.c <- as.data.frame(p$data)
+  write.csv(df.c, paste(clusteredDataPath, 'silhouette_manhattan_distance.csv', sep = '/'))
+  
   print('Attempting to plot gap statistic method for manhattan distance metric')
   p <- fviz_nbclust(
     as.matrix(scaled.df), 
@@ -265,12 +274,15 @@ calculateDistanceMatrices <- function(df, scaled.df) {
   print(p)
   dev.off()
   
+  df.c <- as.data.frame(p$data)
+  write.csv(df.c, paste(clusteredDataPath, 'gap_manhattan_distance.csv', sep = '/'))
+  
   print('Calculating cosine similarity distance matrix')
   dist.cosine.similarity <- distance(scaled.df, method = "cosine")
   write.csv(as.matrix(dist.cosine.similarity), paste(clusteredDataPath, 'cosine_distance.csv', sep = '/'))
   
   print('Visualizing cosine similarity distance matrix')
-  png(paste(clusteredDataVisualizations, 'cosine_distance_matrix.png', sep = '/'))
+  png(paste(clusteredDataVisualizations, 'cosine_distance_matrix_full.png', sep = '/'))
   p.d <- fviz_dist(
     as.dist(dist.cosine.similarity),
     order = TRUE,
@@ -311,6 +323,9 @@ calculateDistanceMatrices <- function(df, scaled.df) {
   print(p)
   dev.off()
   
+  df.c <- as.data.frame(p$data)
+  write.csv(df.c, paste(clusteredDataPath, 'silhouette_cosine_distance.csv', sep = '/'))
+  
   print('Attempting to plot gap statistic method for cosine distance metric')
   p <- fviz_nbclust(
     as.matrix(scaled.df), 
@@ -322,6 +337,9 @@ calculateDistanceMatrices <- function(df, scaled.df) {
   ggsave(paste(clusteredDataVisualizations, 'gap_cosine_distance.svg', sep = '/'))
   print(p)
   dev.off()
+  
+  df.c <- as.data.frame(p$data)
+  write.csv(df.c, paste(clusteredDataPath, 'gap_cosine_distance.csv', sep = '/'))
 }
 
 runKMeansClustering <- function(df, scaled.df) {
@@ -443,7 +461,10 @@ if (clusterRecordData) {
 
 if (uploadToS3) {
   allFiles <- list.files(clusteredDataPath, full.names = TRUE, pattern = '*.csv')
-  print(allFiles)
+  print('Uploading clustered data to S3')
+  lapply(allFiles, FUN = function(f) { storeDataInS3(f) })
+  allFiles <- list.files(clusteredDataVisualizations, full.names = TRUE, pattern = '*', recursive = TRUE)
+  print('Uploading clustered data visualizations to S3')
   lapply(allFiles, FUN = function(f) { storeDataInS3(f) })
 }
 

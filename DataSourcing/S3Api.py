@@ -47,7 +47,7 @@ class S3Api:
         ----------
         """
         csv_buffer = StringIO()
-        df.to_csv(csv_buffer)
+        df.to_csv(csv_buffer, index=False)
         s3_object = self._s3.Object(self._s3_bucket, f'{location.value}/{file_name}')
         s3_object.put(Body=csv_buffer.getvalue())
 

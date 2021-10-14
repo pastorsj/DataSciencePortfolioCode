@@ -38,7 +38,7 @@ createDirectoryIfNotExists(clusteredDataVisualizations)
 combineProcessedData <- FALSE
 cleanProcessedData <- FALSE
 clusterRecordData <- TRUE
-uploadToS3 <- TRUE
+uploadToS3 <- FALSE
 
 # Combining the data
 # Algorithm
@@ -141,10 +141,12 @@ plotClusters <- function(df, scaled.df, clusterName, title, filename) {
     group_by_at(clusterName) %>%
     summarize(TotalInLockdown = sum((InLockdown == TRUE) | (InLockdown == 'True')), TotalNotInLockdown = sum((InLockdown == FALSE) | (InLockdown == 'False'))) %>%
     ungroup()
-  
+  print(stat.df[clusterName])
+  colnames(stat.df)[which(names(stat.df) == clusterName)] <- 'Cluster'
+
   print(stat.df)
   print('Writing statistics to a csv')
-  write.csv(as.data.frame(stat.df), paste(clusteredDataPath, paste(filename, '_statistics.csv', sep = ''), sep = '/'))
+  write.csv(as.data.frame(stat.df), paste(clusteredDataPath, paste(filename, '_statistics.csv', sep = ''), sep = '/'), row.names=FALSE)
 }
 
 
@@ -202,7 +204,7 @@ calculateDistanceMatrices <- function(df, scaled.df) {
   p <- fviz_nbclust(
     as.matrix(scaled.df), 
     kmeans,
-    k.max = 10,
+    k.max = 30,
     method = "gap_stat",
     diss = dist.euclidean
   ) + labs(title = "Gap Statistic Method (Euclidean)")
@@ -266,7 +268,7 @@ calculateDistanceMatrices <- function(df, scaled.df) {
   p <- fviz_nbclust(
     as.matrix(scaled.df), 
     kmeans,
-    k.max = 10,
+    k.max = 30,
     method = "gap_stat",
     diss = dist.manhattan
   ) + labs(title = "Gap Statistic Method (Manhattan)")
@@ -330,7 +332,7 @@ calculateDistanceMatrices <- function(df, scaled.df) {
   p <- fviz_nbclust(
     as.matrix(scaled.df), 
     kmeans,
-    k.max = 10,
+    k.max = 30,
     method = "gap_stat",
     diss = as.dist(dist.cosine.similarity)
   ) + labs(title = "Gap Statistic Method (Cosine Similarity)")
@@ -359,51 +361,51 @@ runKMeansClustering <- function(df, scaled.df) {
   df$KMeansCluster2 = k.2$cluster
   plotClusters(df, scaled.df, 'KMeansCluster2', 'Plot of K-Means Clusters (k=2)', 'k_means_2')
 
-    # Try K = 3
-  k <- 3
-  k.3 <- kmeans(scaled.df, k)
-  print('Plotting k = 3 cluster')
-  p <- fviz_cluster(k.3, data = scaled.df,
-                    palette = c("#2E9FDF", "#00AFBB", "#E7B800"), 
+  # Try K = 4
+  k <- 4
+  k.4 <- kmeans(scaled.df, k)
+  print('Plotting k = 4 cluster')
+  p <- fviz_cluster(k.4, data = scaled.df,
+                    palette = c("#2E9FDF", "#00AFBB", "#E7B800", "#820000"), 
                     geom = "point",
                     ellipse.type = "convex", 
                     ggtheme = theme_bw()
-  ) + labs(title = "K Means Clusters (k=3)")
-  ggsave(paste(clusteredDataVisualizations, 'kmeans-3-clusters.svg', sep = '/'))
+  ) + labs(title = "K Means Clusters (k=4)")
+  ggsave(paste(clusteredDataVisualizations, 'kmeans-4-clusters.svg', sep = '/'))
   print(p)
   dev.off()
-  df$KMeansCluster3 = k.3$cluster
-  plotClusters(df, scaled.df, 'KMeansCluster3', 'Plot of K-Means Clusters (k=3)', 'k_means_3')
+  df$KMeansCluster4 = k.4$cluster
+  plotClusters(df, scaled.df, 'KMeansCluster4', 'Plot of K-Means Clusters (k=4)', 'k_means_4')
   
-  # Try K = 6
-  k <- 6
-  k.6 <- kmeans(scaled.df, k)
-  print('Plotting k = 6 cluster')
-  p <- fviz_cluster(k.6, data = scaled.df,
-                    palette = c("#2E9FDF", "#00AFBB", "#E7B800", "#820000", "#82fb6f", "#8947c2"), 
+  # Try K = 8
+  k <- 8
+  k.8 <- kmeans(scaled.df, k)
+  print('Plotting k = 8 cluster')
+  p <- fviz_cluster(k.8, data = scaled.df,
+                    palette = c("#2E9FDF", "#00AFBB", "#E7B800", "#820000", "#82fb6f", "#8947c2", "#F221C1", "#DD4D52"), 
                     geom = "point",
                     ellipse.type = "convex", 
                     ggtheme = theme_bw()
-  ) + labs(title = "K Means Clusters (k=6)")
-  ggsave(paste(clusteredDataVisualizations, 'kmeans-6-clusters.svg', sep = '/'))
+  ) + labs(title = "K Means Clusters (k=8)")
+  ggsave(paste(clusteredDataVisualizations, 'kmeans-8-clusters.svg', sep = '/'))
   print(p)
   dev.off()
-  df$KMeansCluster6 = k.6$cluster
-  plotClusters(df, scaled.df, 'KMeansCluster6', 'Plot of K-Means Clusters (k=6)', 'k_means_6')
+  df$KMeansCluster8 = k.8$cluster
+  plotClusters(df, scaled.df, 'KMeansCluster8', 'Plot of K-Means Clusters (k=8)', 'k_means_8')
   
   return(df)
 }
 
 runDensityClustering <- function(df, scaled.df) {
   dfmatrix <- as.matrix(scaled.df)
-  kNNdistplot(dfmatrix, k = 5)
+  png(paste(clusteredDataVisualizations, 'knn_distance_plot.png', sep = '/'))
+  kNNdistplot(dfmatrix, k = 8)
   abline(h = 7)
-  ggsave(paste(clusteredDataVisualizations, 'knn_distance_plot.svg', sep = '/'))
   dev.off()
   
-  db <- dbscan(scaled.df, eps = 7, MinPts = 10)
+  db <- dbscan(scaled.df, eps = 8, MinPts = 10)
+  png(paste(clusteredDataVisualizations, 'density_clustering.png', sep = '/'))
   hullplot(dfmatrix, db$cluster)
-  ggsave(paste(clusteredDataVisualizations, 'density_clustering.svg', sep = '/'))
   dev.off()
   
   df$DensityCluster <- db$cluster
@@ -450,9 +452,9 @@ if (clusterRecordData) {
   print('Running heirarchical clustering')
   calculateDistanceMatrices(df, scaled.df)
   print('Running k means clustering')
-  df <- runKMeansClustering(df, scaled.df)
+  #df <- runKMeansClustering(df, scaled.df)
   print('Running density based clustering')
-  df <- runDensityClustering(df, scaled.df)
+  #df <- runDensityClustering(df, scaled.df)
   print('Plotting clusters')
   write.csv(df, 'clustered_record_data.csv')
 }

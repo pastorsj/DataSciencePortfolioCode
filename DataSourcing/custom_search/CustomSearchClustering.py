@@ -221,6 +221,7 @@ class CustomSearchClustering:
             locusts=pd.NamedAgg(column='topic', aggfunc=lambda t: self.clusterByTopic(t, 'locusts')),
             war=pd.NamedAgg(column='topic', aggfunc=lambda t: self.clusterByTopic(t, 'war'))
         )
+        statistics_df['Cluster'] = [i for i in range(statistics_df.shape[0])]
         output_file = f'{self.__clustered_data_location}/clustering_statistics/{clustering_type}.csv'
         statistics_df.to_csv(output_file, index=False)
         print(statistics_df)

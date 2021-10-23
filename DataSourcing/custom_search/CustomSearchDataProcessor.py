@@ -7,7 +7,7 @@ import glob
 import statistics
 
 # Constants
-STORE_DATA = True
+STORE_DATA = False
 words = set(nltk.corpus.words.words())
 lemmatizer = WordNetLemmatizer()
 

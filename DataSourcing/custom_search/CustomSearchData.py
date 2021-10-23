@@ -133,8 +133,8 @@ if __name__ == '__main__':
     print('Scraping the google search api for drought articles relating to food security')
     search_data_instance.search(40, 'drought affect food security hunger', 'search_results/drought-search-results.csv', 'drought')
 
-    print('Scraping the google search api for war articles relating to food security')
-    search_data_instance.search(40, 'war fighting affect food security hunger', 'search_results/war-search-results.csv', 'war')
+    print('Scraping the google search api for ebola articles relating to ebola')
+    search_data_instance.search(40, 'ebola affect food security hunger', 'search_results/ebola-search-results.csv', 'ebola')
 
     if STORE_DATA:
         print('Storing covid search results in S3')
@@ -146,6 +146,6 @@ if __name__ == '__main__':
         print('Storing wildfire search results in S3')
         search_data_instance.store_raw_data('search_results/wildfire-search-results.csv')
 
-        print('Storing war search results in S3')
-        search_data_instance.store_raw_data('search_results/war-search-results.csv')
+        print('Storing ebola search results in S3')
+        search_data_instance.store_raw_data('search_results/ebola-search-results.csv')
 

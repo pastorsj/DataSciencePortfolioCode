@@ -242,7 +242,7 @@ calculateDistanceMatrices <- function(df, scaled.df) {
   dist.manhattan.r = dist(scaled.df[sampled.values, ], method = "manhattan")
   df.sampled <- df[sampled.values, ]
   
-  print('hclust with randomly sample euclidean distance matrix')
+  print('hclust with randomly sample manhattan distance matrix')
   png(paste(clusteredDataVisualizations, 'manhattan_distance_dendrogram_sample.png', sep = '/'), width = 1200)
   fitWithManhattan <- hclust(dist.manhattan.r, method = "ward.D2")
   p <- plot(fitWithManhattan, labels = df.sampled$InLockdown, main = "Cluster Dendrogram using Manhattan Distance")

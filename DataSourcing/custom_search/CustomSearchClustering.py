@@ -15,7 +15,7 @@ import os
 import glob
 import codecs
 
-STORE_DATA = True
+STORE_DATA = False
 
 
 class CustomSearchClustering:
@@ -219,7 +219,7 @@ class CustomSearchClustering:
             covid=pd.NamedAgg(column='topic', aggfunc=lambda t: self.clusterByTopic(t, 'covid')),
             drought=pd.NamedAgg(column='topic', aggfunc=lambda t: self.clusterByTopic(t, 'drought')),
             locusts=pd.NamedAgg(column='topic', aggfunc=lambda t: self.clusterByTopic(t, 'locusts')),
-            war=pd.NamedAgg(column='topic', aggfunc=lambda t: self.clusterByTopic(t, 'war'))
+            ebola=pd.NamedAgg(column='topic', aggfunc=lambda t: self.clusterByTopic(t, 'ebola'))
         )
         statistics_df['Cluster'] = [i for i in range(statistics_df.shape[0])]
         output_file = f'{self.__clustered_data_location}/clustering_statistics/{clustering_type}.csv'
@@ -332,7 +332,7 @@ if __name__ == '__main__':
     fs.create_directory_if_not_exists('clustered_data/search_results/silhouette_method/')
 
     search_clustering = CustomSearchClustering(fs, S3Api.S3Api())
-    #search_clustering.cluster_search_data()
+    search_clustering.cluster_search_data()
 
     if STORE_DATA:
         search_clustering.store_clustered_search_data()

@@ -8,6 +8,8 @@ library(RColorBrewer)
 library(webshot)
 library(htmlwidgets)
 library(aws.s3)
+library(stringr)
+library(dplyr)
 webshot::install_phantomjs()
 
 
@@ -34,9 +36,11 @@ createDirectoryIfNotExists(processedDataPath)
 createDirectoryIfNotExists(processedDataVisualizations)
 
 covidCorpus <- 'covid_corpus'
-h1n1Corpus <- 'h1n1_corpus'
+ebolaCorpus <- 'ebola_corpus'
+droughtCorpus <- 'drought_corpus'
+locustsCorpus <- 'locusts_corpus'
 
-extractAndProcessData <- FALSE
+extractAndProcessData <- TRUE
 storeInS3 <- FALSE
 
 extractCorpusDataAndProcess <- function(corpus_path, type) {
@@ -62,6 +66,8 @@ extractCorpusDataAndProcess <- function(corpus_path, type) {
   print('Attempting to save wordcloud as a raw data visualization')
   saveWidget(w.raw, paste('raw_data_visualizations/', type, '_wordcloud.html', sep = ''), selfcontained = F)
   
+
+  
   # Clean the data as much as possible
   vcorpus <- tm_map(vcorpus, removePunctuation)
   vcorpus <- tm_map(vcorpus, removeNumbers)
@@ -69,8 +75,17 @@ extractCorpusDataAndProcess <- function(corpus_path, type) {
   vcorpus <- tm_map(vcorpus, content_transformer(tolower))
   vcorpus <- tm_map(vcorpus, stripWhitespace)
   vcorpus <- tm_map(vcorpus, lemmatize_words)
+
+  dtm <- DocumentTermMatrix(vcorpus, control = list(wordLengths = c(3, 20)))
+  text <- apply(removeSparseTerms(dtm, 0.99), 1, function(x) paste(rep(names(x), x), collapse = " "))
+  df.dtm <- as.data.frame(text)
+  df.dtm$link <- allFiles
+  df.dtm$topic <- type
+  df.dtm$text <- gsub("[[:punct:]]", "", df.dtm$text)
+  df.dtm$text <- gsub("\\b\\w{1,2}\\s", "", df.dtm$text)
   
-  dtm <- DocumentTermMatrix(vcorpus)
+  write.csv(df.dtm, paste('processed_data/', type, '_list.csv', sep = ''), row.names = FALSE)
+  
   cleaned_matrix <- as.matrix(removeSparseTerms(dtm, 0.99))
   consolidatedMatrix <- sort(colSums(cleaned_matrix), decreasing = TRUE)
   df <- data.frame(words = names(consolidatedMatrix), freq = consolidatedMatrix)
@@ -100,7 +115,9 @@ storeDataInS3 <- function(file, directory) {
 
 if (extractAndProcessData) {
   extractCorpusDataAndProcess(covidCorpus, 'covid')
-  extractCorpusDataAndProcess(h1n1Corpus, 'h1n1')
+  extractCorpusDataAndProcess(ebolaCorpus, 'ebola')
+  extractCorpusDataAndProcess(droughtCorpus, 'drought')
+  extractCorpusDataAndProcess(locustsCorpus, 'locusts')
 }
 
 if (storeInS3) {
@@ -120,5 +137,3 @@ if (storeInS3) {
   allFiles <- list.files(processedDataVisualizations, full.names = TRUE, pattern = '*.html')
   lapply(allFiles, FUN = function(f) { storeDataInS3(f, 'corpus_data') })
 }
-
-

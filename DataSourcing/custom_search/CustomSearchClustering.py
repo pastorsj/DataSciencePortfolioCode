@@ -35,6 +35,8 @@ class CustomSearchClustering:
         self._file_storage = file_storage
         self._s3_api = s3_api
         self.__processed_data_location = 'processed_data/search_results/cleaned_search_data.csv'
+        self.__processed_pdf_data_location = '/Users/sampastoriza/Documents/Programming/DataScienceDevelopment/DataSciencePortfolioCode/PandemicComparison/processed_data/cleaned_corpus_data.csv'
+
         self.__clustered_visualizations_location = 'clustered_data_visualizations/search_results'
         self.__clustered_data_location = 'clustered_data/search_results'
         self._additional_stop_words = ['title', 'journal', 'volume', 'author', 'scholar', 'article', 'issue']
@@ -42,7 +44,10 @@ class CustomSearchClustering:
 
     def cluster_search_data(self):
         self.__clean_clustered_visualizations()
-        processed_df = pd.read_csv(self.__processed_data_location)
+        processed_df = pd.read_csv(self.__processed_data_location, index_col=False)
+        processed_pdf_df = pd.read_csv(self.__processed_pdf_data_location, index_col=False)
+        processed_df = pd.concat([processed_df, processed_pdf_df], ignore_index=True)
+        processed_df.to_csv('processed_data/search_results/combined_search_data.csv', index=False)
         print(processed_df.head())
 
         stop_words = ENGLISH_STOP_WORDS.union(self._additional_stop_words)

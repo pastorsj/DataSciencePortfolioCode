@@ -80,6 +80,7 @@ extractCorpusDataAndProcess <- function(corpus_path, type) {
   text <- apply(removeSparseTerms(dtm, 0.99), 1, function(x) paste(rep(names(x), x), collapse = " "))
   df.dtm <- as.data.frame(text)
   df.dtm$link <- allFiles
+  df.dtm$title <- allFiles
   df.dtm$topic <- type
   df.dtm$text <- gsub("[[:punct:]]", "", df.dtm$text)
   df.dtm$text <- gsub("\\b\\w{1,2}\\s", "", df.dtm$text)
@@ -96,6 +97,8 @@ extractCorpusDataAndProcess <- function(corpus_path, type) {
   w <- wordcloud2(df, size = 2)
   print('Attempting to save wordcloud as a processed data visualization')
   saveWidget(w, paste('processed_data_visualizations/', type, '_wordcloud.html', sep = ''), selfcontained = F)
+  
+  return(df.dtm)
 }
 
 
@@ -114,10 +117,12 @@ storeDataInS3 <- function(file, directory) {
 }
 
 if (extractAndProcessData) {
-  extractCorpusDataAndProcess(covidCorpus, 'covid')
-  extractCorpusDataAndProcess(ebolaCorpus, 'ebola')
-  extractCorpusDataAndProcess(droughtCorpus, 'drought')
-  extractCorpusDataAndProcess(locustsCorpus, 'locusts')
+  cleaned.df <- extractCorpusDataAndProcess(covidCorpus, 'covid')
+  cleaned.df <- rbind(cleaned.df, extractCorpusDataAndProcess(ebolaCorpus, 'ebola'))
+  cleaned.df <- rbind(cleaned.df, extractCorpusDataAndProcess(droughtCorpus, 'drought'))
+  cleaned.df <- rbind(cleaned.df, extractCorpusDataAndProcess(locustsCorpus, 'locusts'))
+  
+  write.csv(cleaned.df, 'processed_data/cleaned_corpus_data.csv', row.names = FALSE)
 }
 
 if (storeInS3) {

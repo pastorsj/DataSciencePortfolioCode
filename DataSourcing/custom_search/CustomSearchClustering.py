@@ -15,7 +15,7 @@ import os
 import glob
 import codecs
 
-STORE_DATA = False
+STORE_DATA = True
 
 
 class CustomSearchClustering:

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import S3Api
 import glob
 
-STORE_DATA = False
+STORE_DATA = True
 
 class CustomSearchProcessedDataVisualizer:
     """Visualizes processed search data information obtained from the Google Search API using a wordcloud"""

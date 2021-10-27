@@ -25,10 +25,10 @@ createDirectoryIfNotExists <- function(path) {
   }
 }
 
-rawDataPath <- 'raw_data'
-rawDataVisualizations <- 'raw_data_visualizations'
-processedDataPath <- 'processed_data'
-processedDataVisualizations = 'processed_data_visualizations'
+rawDataPath <- 'raw_data/corpus_data'
+rawDataVisualizations <- 'raw_data_visualizations/corpus_data'
+processedDataPath <- 'processed_data/corpus_data'
+processedDataVisualizations = 'processed_data_visualizations/corpus_data'
 
 createDirectoryIfNotExists(rawDataPath)
 createDirectoryIfNotExists(rawDataVisualizations)
@@ -41,7 +41,7 @@ droughtCorpus <- 'drought_corpus'
 locustsCorpus <- 'locusts_corpus'
 
 extractAndProcessData <- TRUE
-storeInS3 <- FALSE
+storeInS3 <- TRUE
 
 extractCorpusDataAndProcess <- function(corpus_path, type) {
   allFiles <- list.files(corpus_path, full.names = TRUE, pattern = '*.pdf')
@@ -60,11 +60,11 @@ extractCorpusDataAndProcess <- function(corpus_path, type) {
   df.raw <- data.frame(words = names(consolidatedMatrix.raw), freq = consolidatedMatrix.raw)
   
   print('Writing raw data to file')
-  write.csv(data.frame(cleaned_matrix.raw), paste('raw_data/', type, '_dtm.csv', sep = ''))
+  write.csv(data.frame(cleaned_matrix.raw), paste(rawDataPath, paste(type, '_dtm.csv', sep = ''), sep = '/'))
   
   w.raw <- wordcloud2(df.raw, size = 2)
   print('Attempting to save wordcloud as a raw data visualization')
-  saveWidget(w.raw, paste('raw_data_visualizations/', type, '_wordcloud.html', sep = ''), selfcontained = F)
+  saveWidget(w.raw, paste(rawDataVisualizations, paste(type, '_wordcloud.html', sep = ''), sep = '/'), selfcontained = F)
   
 
   
@@ -85,34 +85,32 @@ extractCorpusDataAndProcess <- function(corpus_path, type) {
   df.dtm$text <- gsub("[[:punct:]]", "", df.dtm$text)
   df.dtm$text <- gsub("\\b\\w{1,2}\\s", "", df.dtm$text)
   
-  write.csv(df.dtm, paste('processed_data/', type, '_list.csv', sep = ''), row.names = FALSE)
+  write.csv(df.dtm, paste(processedDataPath, paste(type, '_list.csv', sep = ''), sep = '/'), row.names = FALSE)
   
   cleaned_matrix <- as.matrix(removeSparseTerms(dtm, 0.99))
   consolidatedMatrix <- sort(colSums(cleaned_matrix), decreasing = TRUE)
   df <- data.frame(words = names(consolidatedMatrix), freq = consolidatedMatrix)
   
   print('Writing processed data to file')
-  write.csv(data.frame(cleaned_matrix), paste('processed_data/', type, '_dtm.csv', sep = ''))
+  write.csv(data.frame(cleaned_matrix), paste(processedDataPath, paste(type, '_dtm.csv', sep = ''), sep = '/'))
   
   w <- wordcloud2(df, size = 2)
   print('Attempting to save wordcloud as a processed data visualization')
-  saveWidget(w, paste('processed_data_visualizations/', type, '_wordcloud.html', sep = ''), selfcontained = F)
+  saveWidget(w, paste(processedDataVisualizations, paste(type, '_wordcloud.html', sep = ''), sep = '/'), selfcontained = F)
   
   return(df.dtm)
 }
 
 
-
 #' Stores a file in S3
 #' 
 #' @param file A file
+#' @param suffix The type of data. Used to strip from the filename for cleaning purposes
 #' @param directory The inner directory used to store the data in S3
-storeDataInS3 <- function(file, directory) {
-  folderStructure <- unlist(strsplit(file, split = '/'))
-  s3FilePath <- paste(folderStructure[1], directory, folderStructure[2], sep = '/')
+storeDataInS3 <- function(file) {
   print('Storing file in s3')
-  print(s3FilePath)
-  put_object(file = file, object = s3FilePath, bucket = 'datastore.portfolio.sampastoriza.com')
+  print(file)
+  put_object(file = file, object = file, bucket = 'datastore.portfolio.sampastoriza.com')
   print('Uploaded file to S3 successfully')
 }
 
@@ -122,23 +120,23 @@ if (extractAndProcessData) {
   cleaned.df <- rbind(cleaned.df, extractCorpusDataAndProcess(droughtCorpus, 'drought'))
   cleaned.df <- rbind(cleaned.df, extractCorpusDataAndProcess(locustsCorpus, 'locusts'))
   
-  write.csv(cleaned.df, 'processed_data/cleaned_corpus_data.csv', row.names = FALSE)
+  write.csv(cleaned.df, 'processed_data/corpus_data/cleaned_corpus_data.csv', row.names = FALSE)
 }
 
 if (storeInS3) {
   print('Uploading raw dtm data to S3')
   allFiles <- list.files(rawDataPath, full.names = TRUE, pattern = '*.csv')
-  lapply(allFiles, FUN = function(f) { storeDataInS3(f, 'corpus_data') })
+  lapply(allFiles, FUN = function(f) { storeDataInS3(f) })
   
   print('Uploading raw data visualizations to S3')
-  allFiles <- list.files(rawDataVisualizations, full.names = TRUE, pattern = '*.html')
-  lapply(allFiles, FUN = function(f) { storeDataInS3(f, 'corpus_data') })
+  allFiles <- list.files(rawDataVisualizations, full.names = TRUE, pattern = '*', recursive = TRUE)
+  lapply(allFiles, FUN = function(f) { storeDataInS3(f) })
   
   print('Uploading processed dtm data to S3')
   allFiles <- list.files(processedDataPath, full.names = TRUE, pattern = '*.csv')
-  lapply(allFiles, FUN = function(f) { storeDataInS3(f, 'corpus_data') })
+  lapply(allFiles, FUN = function(f) { storeDataInS3(f) })
   
   print('Uploading processed data visualizations to S3')
-  allFiles <- list.files(processedDataVisualizations, full.names = TRUE, pattern = '*.html')
-  lapply(allFiles, FUN = function(f) { storeDataInS3(f, 'corpus_data') })
+  allFiles <- list.files(processedDataVisualizations, full.names = TRUE, pattern = '*', recursive = TRUE)
+  lapply(allFiles, FUN = function(f) { storeDataInS3(f) })
 }

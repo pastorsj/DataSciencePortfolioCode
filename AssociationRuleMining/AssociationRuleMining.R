@@ -89,8 +89,8 @@ signficant.rules <- rules[!is.significant(rules,
                                adjust = 'bonferroni')]
 # Attempt to focus attention on key words
 (filtered.rules <- subset(signficant.rules, subset = 
-                            (rhs %pin% 'ebola') | (rhs %pin% 'covid') | (rhs %pin% 'drought') | (rhs %pin% 'locust') | (rhs %pin% 'food') | (rhs %pin% 'security') | (rhs %pin% 'nutrition') | (rhs %pin% 'stability') |
-                            (lhs %pin% 'ebola') | (lhs %pin% 'covid') | (lhs %pin% 'drought') | (lhs %pin% 'locust') | (lhs %pin% 'food') | (lhs %pin% 'security') | (lhs %pin% 'nutrition') | (lhs %pin% 'stability')
+                            (rhs %pin% 'ebola') | (rhs %pin% 'covid') | (rhs %pin% 'drought') | (rhs %pin% 'locust') | (rhs %pin% 'food') | (rhs %pin% 'security') | (rhs %pin% 'nutrition') | (rhs %pin% 'stability') | (rhs %pin% 'utilization') |
+                            (lhs %pin% 'ebola') | (lhs %pin% 'covid') | (lhs %pin% 'drought') | (lhs %pin% 'locust') | (lhs %pin% 'food') | (lhs %pin% 'security') | (lhs %pin% 'nutrition') | (lhs %pin% 'stability') | (lhs %pin% 'utilization')
 ))
 inspect(filtered.rules)
 
@@ -239,8 +239,8 @@ rules.ebola <- rules.ebola[!is.significant(rules.ebola,
                                           adjust = 'bonferroni')]
 # Attempt to focus attention on key words
 (filtered.rules.ebola <- subset(rules.ebola, subset = 
-                            (rhs %pin% 'ebola') | (rhs %pin% 'food') | (rhs %pin% 'security') | (rhs %pin% 'nutrition') | (rhs %pin% 'stability') |
-                            (lhs %pin% 'ebola') | (lhs %pin% 'food') | (lhs %pin% 'security') | (lhs %pin% 'nutrition') | (lhs %pin% 'stability')
+                            (rhs %pin% 'ebola') | (rhs %pin% 'food') | (rhs %pin% 'security') | (rhs %pin% 'nutrition') | (rhs %pin% 'stability') | (rhs %pin% 'utilization') |
+                            (lhs %pin% 'ebola') | (lhs %pin% 'food') | (lhs %pin% 'security') | (lhs %pin% 'nutrition') | (lhs %pin% 'stability') | (lhs %pin% 'utilization')
 ))
 inspect(filtered.rules.ebola)
 
@@ -261,8 +261,8 @@ rules.covid <- rules.covid[!is.significant(rules.covid,
                                            adjust = 'bonferroni')]
 # Attempt to focus attention on key words
 (filtered.rules.covid <- subset(rules.covid, subset = 
-                                  (rhs %pin% 'covid') | (rhs %pin% 'food') | (rhs %pin% 'security') | (rhs %pin% 'nutrition') | (rhs %pin% 'stability') |
-                                  (lhs %pin% 'covid') | (lhs %pin% 'food') | (lhs %pin% 'security') | (lhs %pin% 'nutrition') | (lhs %pin% 'stability')
+                                  (rhs %pin% 'covid') | (rhs %pin% 'food') | (rhs %pin% 'security') | (rhs %pin% 'nutrition') | (rhs %pin% 'stability') | (rhs %pin% 'utilization') |
+                                  (lhs %pin% 'covid') | (lhs %pin% 'food') | (lhs %pin% 'security') | (lhs %pin% 'nutrition') | (lhs %pin% 'stability') | (lhs %pin% 'utilization')
 ))
 inspect(filtered.rules.covid)
 
@@ -283,8 +283,8 @@ rules.locust <- rules.locust[!is.significant(rules.locust,
                                            adjust = 'bonferroni')]
 # Attempt to focus attention on key words
 (filtered.rules.locust <- subset(rules.locust, subset = 
-                                  (rhs %pin% 'locust') | (rhs %pin% 'food') | (rhs %pin% 'security') | (rhs %pin% 'nutrition') | (rhs %pin% 'stability') |
-                                  (lhs %pin% 'locust') | (lhs %pin% 'food') | (lhs %pin% 'security') | (lhs %pin% 'nutrition') | (lhs %pin% 'stability')
+                                  (rhs %pin% 'locust') | (rhs %pin% 'food') | (rhs %pin% 'security') | (rhs %pin% 'nutrition') | (rhs %pin% 'stability') | (rhs %pin% 'utilization') |
+                                  (lhs %pin% 'locust') | (lhs %pin% 'food') | (lhs %pin% 'security') | (lhs %pin% 'nutrition') | (lhs %pin% 'stability') | (lhs %pin% 'utilization')
 ))
 inspect(filtered.rules.locust)
 
@@ -326,10 +326,10 @@ storeDataInS3 <- function(file) {
   print('Uploaded file to S3 successfully')
 }
 
-# allFiles <- list.files(armDataPath, full.names = TRUE, pattern = '*')
-# print('Uploading arm data to S3')
-# lapply(allFiles, FUN = function(f) { storeDataInS3(f) })
-# allFiles <- list.files(armDataVisualizations, full.names = TRUE, pattern = '*', recursive = TRUE)
-# print('Uploading arm data visualizations to S3')
-# lapply(allFiles, FUN = function(f) { storeDataInS3(f) })
+allFiles <- list.files(armDataPath, full.names = TRUE, pattern = '*')
+print('Uploading arm data to S3')
+lapply(allFiles, FUN = function(f) { storeDataInS3(f) })
+allFiles <- list.files(armDataVisualizations, full.names = TRUE, pattern = '*', recursive = TRUE)
+print('Uploading arm data visualizations to S3')
+lapply(allFiles, FUN = function(f) { storeDataInS3(f) })
 

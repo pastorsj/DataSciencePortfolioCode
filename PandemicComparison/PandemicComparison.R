@@ -66,6 +66,16 @@ extractCorpusDataAndProcess <- function(corpus_path, type) {
   print('Attempting to save wordcloud as a raw data visualization')
   saveWidget(w.raw, paste(rawDataVisualizations, paste(type, '_wordcloud.html', sep = ''), sep = '/'), selfcontained = F)
   
+  png(paste(rawDataVisualizations, paste(type, '_wordcloud.png', sep = ''), sep = '/'), width = 6, height = 4, units='in', res = 400)
+  wordcloud(words = df.raw$words, 
+            freq = df.raw$freq, 
+            min.freq = 1,           
+            max.words=200, 
+            random.order=FALSE, 
+            rot.per=0.35,            
+            colors=brewer.pal(8, "Dark2"))
+  dev.off()
+  
 
   
   # Clean the data as much as possible
@@ -97,6 +107,16 @@ extractCorpusDataAndProcess <- function(corpus_path, type) {
   w <- wordcloud2(df, size = 2)
   print('Attempting to save wordcloud as a processed data visualization')
   saveWidget(w, paste(processedDataVisualizations, paste(type, '_wordcloud.html', sep = ''), sep = '/'), selfcontained = F)
+  
+  png(paste(processedDataVisualizations, paste(type, '_wordcloud.png', sep = ''), sep = '/'), width = 6, height = 4, units='in', res = 400)
+  wordcloud(words = df$words, 
+            freq = df$freq, 
+            min.freq = 1,           
+            max.words=200, 
+            random.order=FALSE, 
+            rot.per=0.35,            
+            colors=brewer.pal(8, "Dark2"))
+  dev.off()
   
   return(df.dtm)
 }

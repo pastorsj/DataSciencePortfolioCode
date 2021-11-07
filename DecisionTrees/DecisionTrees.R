@@ -65,7 +65,7 @@ head(df)
 # Remove state, topic, week, date, total, and did not report columns
 df.clean <- df %>% 
   drop_na() %>%
-  select(-State, -Topic, -Week, -Date, -Total, -Did.not.report) %>%
+  select(-Topic, -Week, -Date, -Total, -Did.not.report) %>%
   filter(Characteristic != 'total') %>%
   rename(Label = Characteristic,
          Enough = Enough.of.the.kinds.of.food.wanted,
@@ -78,8 +78,53 @@ df.clean <- df %>%
   filter(InLockdown == 'Yes') %>%
   select(-InLockdown)
 
+df.clean$Region <- lapply(df.clean$State, FUN = function(s) levels(state.region)[state.region[s == state.abb]])
+df.clean <- df.clean %>% 
+  select(-State) %>%
+  transform(Region = factor(Region, levels = unique(state.region)))
+write.csv(as.data.frame(df.clean), paste(decisionTreeData, 'raw-dt-data.csv', sep = '/'), row.names = FALSE)
+
 ####################### Build Decision Tree #######################
-buildDecisionTree <- function(dt.filtered, graph.title, file.prefix) {
+runDecisionTree <- function(training.sample, test.sample, labels.test, graph.title, file.prefix, cp) {
+  dt <- rpart(training.sample$Label ~ ., data = training.sample, method = 'class', cp = cp)
+  summary(dt)
+  
+  print('Created a decision tree')
+  
+  df.importance <- data.frame(importance = dt$variable.importance)
+  df.importance <- df.importance %>% 
+    tibble::rownames_to_column() %>% 
+    dplyr::rename("variable" = rowname) %>% 
+    dplyr::arrange(importance) %>%
+    dplyr::mutate(variable = forcats::fct_inorder(variable))
+  
+  p <- ggplot(df.importance, aes(x = variable, y = importance)) +
+    geom_bar(stat = 'identity', fill = 'steelblue') +
+    guides(fill = FALSE) +
+    xlab("Feature") + ylab("Importance") +
+    ggtitle(paste('Importance of features for ', file.prefix, sep = ''))
+  
+  ggsave(paste(decisionTreeDataVisualizations, paste(file.prefix, '-feature-importance.png', sep = ''), sep = '/'), plot = p)
+  
+  print('Plotted feature importance for decision')
+  
+  dt.prediction <- predict(dt, test.sample, type = 'class')
+  # Create confusion matrix
+  c.m <- as.data.frame.matrix(table(dt.prediction, labels.test))
+  c.m <- cbind(Label = rownames(c.m), c.m)
+  write.csv(c.m, paste(decisionTreeData, paste(file.prefix, '-confusion-matrix.csv', sep = ''), sep = '/'), row.names = FALSE)
+  
+  print('Predicted using the decision tree and test set')
+  
+  png(paste(decisionTreeDataVisualizations, paste(file.prefix, '-dt.png', sep = ''), sep = '/'), width = 6, height = 4, units='in', res = 400)
+  fancyRpartPlot(dt, main = graph.title)
+  dev.off()
+  
+  print('Visualized the decision tree')
+}
+
+
+runTrees <- function(dt.filtered, graph.title, file.prefix) {
   size.training <- floor(nrow(dt.filtered) * 0.8)
   size.test <- nrow(dt.filtered) - size.training
   
@@ -98,47 +143,36 @@ buildDecisionTree <- function(dt.filtered, graph.title, file.prefix) {
   
   print('Split data into training and testing sets')
   
-  dt <- rpart(training.sample$Label ~ ., data = training.sample, method = 'class')
-  summary(dt)
-  
-  print('Created a decision tree')
-  
-  df.importance <- data.frame(importance = dt$variable.importance)
-  df.importance <- df.importance %>% 
-    tibble::rownames_to_column() %>% 
-    dplyr::rename("variable" = rowname) %>% 
-    dplyr::arrange(importance) %>%
-    dplyr::mutate(variable = forcats::fct_inorder(variable))
-  
-  p <- ggplot(df.importance) +
-    geom_col(aes(x = variable, y = importance)) + 
-    theme_fivethirtyeight()
-  
-  ggsave(paste(decisionTreeDataVisualizations, paste(file.prefix, '-feature-importance.png', sep = ''), sep = '/'), plot = p)
-  
-  print('Plotted feature importance for decision')
-  
-  dt.prediction <- predict(dt, test.sample, type = 'class')
-  # Create confusion matrix
-  c.m <- as.data.frame.matrix(table(dt.prediction, labels.test))
-  c.m <- cbind(Label = rownames(c.m), c.m)
-  write.csv(c.m, paste(decisionTreeData, paste(file.prefix, '-confusion-matrix.csv', sep = ''), sep = '/'), row.names = FALSE)
-
-  print('Predicted using the decision tree and test set')
-  
-  png(paste(decisionTreeDataVisualizations, paste(file.prefix, '-dt.png', sep = ''), sep = '/'), width = 6, height = 4, units='in', res = 400)
-  fancyRpartPlot(dt, main = graph.title)
-  dev.off()
-  
-  print('Visualized the decision tree')
+  print('Create a decision tree with complexity parameter set to 0.01')
+  runDecisionTree(training.sample, test.sample, labels.test, graph.title, paste(file.prefix, 'default', sep = '-'), 0.01)
+  print('Create a decision tree with complexity parameter set to 0.05')
+  runDecisionTree(training.sample, test.sample, labels.test, graph.title, paste(file.prefix, '0.05', sep = '-'), 0.025)
+  print('Creating a decision tree purposely overfit')
+  runDecisionTree(training.sample, test.sample, labels.test, graph.title, paste(file.prefix, 'overfit', sep = '-'), 0)
   
   rf <- randomForest(Label ~ ., data = training.sample)
   print('Generated random forest')
+  
+  png(paste(randomForestDataVisualizations, paste(file.prefix, '-error-rate-rf.png', sep = ''), sep = '/'), width = 6, height = 4, units='in', res = 400)
+  p.rf <- plot(rf, main = paste("Error rate of random forest for ", file.prefix, sep = ''))
+  dev.off()
+  print('Visualized error rate for random forest')
+  
+  png(paste(randomForestDataVisualizations, paste(file.prefix, '-variable-importance-rf.png', sep = ''), sep = '/'), width = 6, height = 4, units='in', res = 400)
+  p.rf.vi <- varImpPlot(rf,
+     sort = T,
+     n.var = 10,
+     main = paste("Variable Importance for Random Forest (", file.prefix, ')', sep = ''))
+  dev.off()
+  print('Visualized variable importance for random forest')
+  
   rf.predict <- predict(rf, newdata = test.sample)
   print('Predicted labels using random forest and test set')
+  
   rf.c.m <- as.data.frame.matrix(rf$confusion)
   rf.c.m <- cbind(Label = rownames(rf.c.m), rf.c.m)
   write.csv(rf.c.m, paste(randomForestData, paste(file.prefix, '-confusion-matrix.csv', sep = ''), sep = '/'), row.names = FALSE)
+  print('Created confusion matrix for random forest')
 }
 ################################################################ 
 
@@ -148,53 +182,21 @@ df.ages <- df.clean %>%
 
 head(df.ages)
 
-buildDecisionTree(df.ages, 'Decision Tree by Age', 'age')
+runTrees(df.ages, 'Decision Tree by Age', 'age')
 
 # Build a decision tree for only female/male
 df.gender <- df.clean %>%
   filter(Label %in% c('female', 'male'))
 
 head(df.gender)
-buildDecisionTree(df.gender, 'Decision Tree by Gender', 'gender')
+runTrees(df.gender, 'Decision Tree by Gender', 'gender')
 
 # Build a decision for only race
 df.race <- df.clean %>%
   filter(Label %in% c('hispanic or latino', 'white alone', 'black alone', 'asian alone', 'two or more races'))
 
 head(df.race)
-buildDecisionTree(df.race, 'Decision Tree by Race', 'race')
-
-# ages.in.lockdown <- df.ages[df.ages$InLockdown == 'Yes', ]
-# ages.not.in.lockdown <- df.ages[df.ages$InLockdown == 'No', ]
-# # Build a decision tree to attempt to include lockdown information by sampling
-# sample.ages.lockdown <- c(sample(nrow(ages.in.lockdown), min(nrow(ages.in.lockdown), 500), replace = FALSE), 
-#                           sample(nrow(ages.not.in.lockdown), min(nrow(ages.in.lockdown), 500), replace = FALSE))
-# 
-# df.ages.lockdown <- df.ages[sample.ages.lockdown, ]
-# head(df.ages.lockdown)
-# buildDecisionTree(df.ages.lockdown, 'Decision Tree by Ages, Lockdown Data Includes', 'age-lockdown')
-# 
-# 
-# gender.in.lockdown <- df.gender[df.gender$InLockdown == 'Yes', ]
-# gender.not.in.lockdown <- df.gender[df.gender$InLockdown == 'No', ]
-# # Build a decision tree to attempt to include lockdown information by sampling
-# sample.ages.lockdown <- c(sample(nrow(gender.in.lockdown), min(nrow(gender.in.lockdown), 500), replace = FALSE), 
-#                           sample(nrow(gender.not.in.lockdown), min(nrow(gender.in.lockdown), 500), replace = FALSE))
-# 
-# df.gender.lockdown <- df.gender[sample.ages.lockdown, ]
-# head(df.gender.lockdown)
-# buildDecisionTree(df.gender.lockdown, 'Decision Tree by Gender, Lockdown Data Includes', 'gender-lockdown')
-# 
-# 
-# race.in.lockdown <- df.race[df.race$InLockdown == 'Yes', ]
-# race.not.in.lockdown <- df.race[df.race$InLockdown == 'No', ]
-# # Build a decision tree to attempt to include lockdown information by sampling
-# sample.ages.lockdown <- c(sample(nrow(race.in.lockdown), min(nrow(race.in.lockdown), 500), replace = FALSE), 
-#                           sample(nrow(race.not.in.lockdown), min(nrow(race.in.lockdown), 500), replace = FALSE))
-# 
-# df.race.lockdown <- df.race[sample.ages.lockdown, ]
-# head(df.race.lockdown)
-# buildDecisionTree(df.race.lockdown, 'Decision Tree by Race, Lockdown Data Includes', 'race-lockdown')
+runTrees(df.race, 'Decision Tree by Race', 'race')
 
 #' Stores a file in S3
 #'  

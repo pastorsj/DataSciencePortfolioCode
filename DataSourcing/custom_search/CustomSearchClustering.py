@@ -35,7 +35,7 @@ class CustomSearchClustering:
         self._file_storage = file_storage
         self._s3_api = s3_api
         self.__processed_data_location = 'processed_data/search_results/cleaned_search_data.csv'
-        self.__processed_pdf_data_location = '/Users/sampastoriza/Documents/Programming/DataScienceDevelopment/DataSciencePortfolioCode/PandemicComparison/processed_data/cleaned_corpus_data.csv'
+        self.__processed_pdf_data_location = '/Users/sampastoriza/Documents/Programming/DataScienceDevelopment/DataSciencePortfolioCode/PandemicComparison/processed_data/corpus_data/cleaned_corpus_data.csv'
 
         self.__clustered_visualizations_location = 'clustered_data_visualizations/search_results'
         self.__clustered_data_location = 'clustered_data/search_results'

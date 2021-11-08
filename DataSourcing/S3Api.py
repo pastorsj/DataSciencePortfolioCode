@@ -12,6 +12,8 @@ class S3Location(Enum):
     PROCESSED_DATA_VISUALIZATIONS = 'processed_data_visualizations'
     CLUSTERED_DATA = 'clustered_data'
     CLUSTERED_DATA_VISUALIZATIONS = 'clustered_data_visualizations'
+    DECISION_TREE_DATA = 'decision_tree_data'
+    DECISION_TREE_DATA_VISUALIZATIONS = 'decision_tree_data_visualizations'
 
 
 class S3Api:

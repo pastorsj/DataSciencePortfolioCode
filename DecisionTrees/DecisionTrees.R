@@ -69,9 +69,9 @@ df.clean <- df %>%
   filter(Characteristic != 'total') %>%
   rename(Label = Characteristic,
          Enough = Enough.of.the.kinds.of.food.wanted,
-         Lack.Variety = Enough.food.but.not.always.the.kinds.wanted,
+         LackVariety = Enough.food.but.not.always.the.kinds.wanted,
          Sometimes = Sometimes.not.enough.to.eat,
-         Not.Enough = Often.not.enough.to.eat) %>%
+         NotEnough = Often.not.enough.to.eat) %>%
   transform(Label = as.factor(Label),
             InLockdown = ifelse(InLockdown == 'True', 'Yes', 'No')) %>%
   transform(InLockdown = as.factor(InLockdown)) %>%

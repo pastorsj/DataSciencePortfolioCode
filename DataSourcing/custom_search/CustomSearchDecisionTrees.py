@@ -162,7 +162,7 @@ class CustomSearchDecisionTrees:
             text_data = " ".join(group[1]['text'].to_list())
             topic = group[0]
             print('Generating wordcloud for topic', topic)
-            wordcloud = WordCloud(stopwords=STOPWORDS, background_color="white").generate(text_data)
+            wordcloud = WordCloud(stopwords=STOPWORDS, background_color="white", collocations=False).generate(text_data)
             print('Saving image to file')
             # Save as an svg for scaling purposes
             wordcloud_svg = wordcloud.to_svg(embed_font=True)
@@ -172,7 +172,7 @@ class CustomSearchDecisionTrees:
 
             vectorizer = CountVectorizer(stop_words="english")
             matrix = vectorizer.fit_transform(group[1]['text'])
-            feature_names = vectorizer.get_feature_names()
+            feature_names = vectorizer.get_feature_names_out()
             values = matrix.toarray()
             v_df = pd.DataFrame(values, columns=feature_names)
             sums = matrix.sum(axis=0).tolist()[0]

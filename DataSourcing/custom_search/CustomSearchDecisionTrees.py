@@ -10,6 +10,7 @@ from sklearn.metrics import ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 from subprocess import call
 import glob
+from wordcloud import WordCloud, STOPWORDS
 
 words = set(nltk.corpus.words.words())
 lemmatizer = WordNetLemmatizer()
@@ -75,6 +76,7 @@ class CustomSearchDecisionTrees:
         processed_pdf_df = pd.read_csv(self.__processed_pdf_data_location, index_col=False)
         df = pd.concat([processed_df, processed_pdf_df], ignore_index=True)
         df['text'] = df['text'].apply(self.filter_non_english_words)
+        self.visualize_processed_search_data(df)
 
         labels = list(set(df['topic']))
         print('Labels', labels)
@@ -147,9 +149,35 @@ class CustomSearchDecisionTrees:
         importance = dt.feature_importances_
 
         fig2 = plt.figure(figsize=(15, 10))
-        ax = pd.Series(importance, index=features).nlargest(10).plot(kind='barh', title="Feature Importance")
+        importance_series = pd.Series(importance, index=features)
+        ax = importance_series.nlargest(10).plot(kind='barh', title="Feature Importance")
         ax.set(xlabel="Importance Level", ylabel="Feature")
         fig2.savefig(f'{self.__decision_tree_data_visualizations_location}feature_importance_{file_description}.png')
+        importance_series.to_csv(f'{self.__decision_tree_data_location}feature_importance_{file_description}.csv')
+
+    def visualize_processed_search_data(self, processed_df):
+        """ Visualizes the processed search data"""
+        print('Visualizing processed and combined search data')
+        for group in processed_df.groupby(by=['topic']):
+            text_data = " ".join(group[1]['text'].to_list())
+            topic = group[0]
+            print('Generating wordcloud for topic', topic)
+            wordcloud = WordCloud(stopwords=STOPWORDS, background_color="white").generate(text_data)
+            print('Saving image to file')
+            # Save as an svg for scaling purposes
+            wordcloud_svg = wordcloud.to_svg(embed_font=True)
+            f = open(f'{self.__decision_tree_data_visualizations_location}{topic}_wordcloud.svg', "w+")
+            f.write(wordcloud_svg)
+            f.close()
+
+            vectorizer = CountVectorizer(stop_words="english")
+            matrix = vectorizer.fit_transform(group[1]['text'])
+            feature_names = vectorizer.get_feature_names()
+            values = matrix.toarray()
+            v_df = pd.DataFrame(values, columns=feature_names)
+            sums = matrix.sum(axis=0).tolist()[0]
+            sorted_frequencies = sorted(zip(feature_names, sums), key=lambda x: -x[1])
+            v_df.to_csv(f'{self.__decision_tree_data_location}{topic}_vectorized.csv')
 
     def store_in_s3(self):
         png_visualizations = list(glob.iglob(f'{self.__decision_tree_data_visualizations_location}/**/*.png', recursive=True))
@@ -161,6 +189,16 @@ class CustomSearchDecisionTrees:
             print('Uploading', file, 'to S3')
             print('Successfully uploaded')
             png.close()
+
+        svg_visualizations = list(glob.iglob(f'{self.__decision_tree_data_visualizations_location}/**/*.svg', recursive=True))
+        for file in svg_visualizations:
+            print('Opening file', file)
+            svg = open(file, "rb")
+            print('Attempting to upload decision tree visualized search data to s3')
+            self._s3_api.upload_svg(svg, file.replace('decision_tree_data_visualizations/', ''), S3Api.S3Location.DECISION_TREE_DATA_VISUALIZATIONS)
+            print('Uploading', file, 'to S3')
+            print('Successfully uploaded')
+            svg.close()
 
         clustered_csv_data = list(glob.iglob(f'{self.__decision_tree_data_location}/**/*.csv', recursive=True))
         for file in clustered_csv_data:

@@ -2,9 +2,9 @@ if (!require("pacman")) {
   install.packages("pacman")
 }
 
-pacman::p_load(tidyverse, rpart, rpart.plot, aws.s3, plotly, rattle, caret, randomForest, caTools, ggplot2, ggthemes)
+pacman::p_load(tidyverse, rpart, rpart.plot, aws.s3, plotly, rattle, caret, randomForest, caTools, ggplot2, ggthemes, cvms, tibble)
 
-saveToS3 <- FALSE
+saveToS3 <- TRUE
 
 #' Creates a directory if it does not exist yet
 #' 
@@ -105,19 +105,36 @@ runDecisionTree <- function(training.sample, test.sample, labels.test, graph.tit
     ggtitle(paste('Importance of features for ', file.prefix, sep = ''))
   
   ggsave(paste(decisionTreeDataVisualizations, paste(file.prefix, '-feature-importance.png', sep = ''), sep = '/'), plot = p)
+  write.csv(df.importance, paste(decisionTreeData, paste(file.prefix, '-feature-importance.csv', sep = ''), sep = '/'), row.names = FALSE)
   
   print('Plotted feature importance for decision')
   
   dt.prediction <- predict(dt, test.sample, type = 'class')
   # Create confusion matrix
+  print('Creating plot of confusion matrix')
+  cfm <- as_tibble(table(dt.prediction, labels.test))
+  pc <- plot_confusion_matrix(cfm, 
+                        target_col = "labels.test", 
+                        prediction_col = "dt.prediction",
+                        counts_col = "n",
+                        place_x_axis_above = FALSE,
+                        add_normalized = FALSE,
+                        add_col_percentages = FALSE,
+                        add_row_percentages = FALSE,
+                        rotate_y_text = FALSE,
+                        rm_zero_text = FALSE,
+                        palette = "Oranges")
+  ggsave(paste(decisionTreeDataVisualizations, paste(file.prefix, '-confusion-matrix.png', sep = ''), sep = '/'), plot = pc)
+  
   c.m <- as.data.frame.matrix(table(dt.prediction, labels.test))
   c.m <- cbind(Label = rownames(c.m), c.m)
   write.csv(c.m, paste(decisionTreeData, paste(file.prefix, '-confusion-matrix.csv', sep = ''), sep = '/'), row.names = FALSE)
   
+  
   print('Predicted using the decision tree and test set')
   
   png(paste(decisionTreeDataVisualizations, paste(file.prefix, '-dt.png', sep = ''), sep = '/'), width = 6, height = 4, units='in', res = 400)
-  fancyRpartPlot(dt, main = graph.title)
+  fancyRpartPlot(dt, main = graph.title, sub = '')
   dev.off()
   
   print('Visualized the decision tree')
@@ -145,8 +162,8 @@ runTrees <- function(dt.filtered, graph.title, file.prefix) {
   
   print('Create a decision tree with complexity parameter set to 0.01')
   runDecisionTree(training.sample, test.sample, labels.test, graph.title, paste(file.prefix, 'default', sep = '-'), 0.01)
-  print('Create a decision tree with complexity parameter set to 0.05')
-  runDecisionTree(training.sample, test.sample, labels.test, graph.title, paste(file.prefix, '0.05', sep = '-'), 0.025)
+  print('Create a decision tree with complexity parameter set to 0.025')
+  runDecisionTree(training.sample, test.sample, labels.test, graph.title, paste(file.prefix, '0.025', sep = '-'), 0.025)
   print('Creating a decision tree purposely overfit')
   runDecisionTree(training.sample, test.sample, labels.test, graph.title, paste(file.prefix, 'overfit', sep = '-'), 0)
   
@@ -158,21 +175,39 @@ runTrees <- function(dt.filtered, graph.title, file.prefix) {
   dev.off()
   print('Visualized error rate for random forest')
   
-  png(paste(randomForestDataVisualizations, paste(file.prefix, '-variable-importance-rf.png', sep = ''), sep = '/'), width = 6, height = 4, units='in', res = 400)
+  png(paste(randomForestDataVisualizations, paste(file.prefix, '-feature-importance-rf.png', sep = ''), sep = '/'), width = 6, height = 4, units='in', res = 400)
   p.rf.vi <- varImpPlot(rf,
      sort = T,
      n.var = 10,
      main = paste("Variable Importance for Random Forest (", file.prefix, ')', sep = ''))
   dev.off()
   print('Visualized variable importance for random forest')
+  variable.importance = round(importance(rf), 2)
+  write.csv(variable.importance, paste(randomForestData, paste(file.prefix, '-variable-importance.csv', sep = ''), sep = '/'))
   
   rf.predict <- predict(rf, newdata = test.sample)
   print('Predicted labels using random forest and test set')
   
-  rf.c.m <- as.data.frame.matrix(rf$confusion)
-  rf.c.m <- cbind(Label = rownames(rf.c.m), rf.c.m)
-  write.csv(rf.c.m, paste(randomForestData, paste(file.prefix, '-confusion-matrix.csv', sep = ''), sep = '/'), row.names = FALSE)
+  
+  c.m <- as.data.frame.matrix(table(rf.predict, labels.test))
+  c.m <- cbind(Label = rownames(c.m), c.m)
+  write.csv(c.m, paste(randomForestData, paste(file.prefix, '-confusion-matrix.csv', sep = ''), sep = '/'), row.names = FALSE)
   print('Created confusion matrix for random forest')
+  
+  cfm <- as_tibble(table(rf.predict, labels.test))
+  pc <- plot_confusion_matrix(cfm, 
+                              target_col = "labels.test", 
+                              prediction_col = "rf.predict",
+                              counts_col = "n",
+                              place_x_axis_above = FALSE,
+                              add_normalized = FALSE,
+                              add_col_percentages = FALSE,
+                              add_row_percentages = FALSE,
+                              rotate_y_text = FALSE,
+                              rm_zero_text = FALSE,
+                              palette = "Greens")
+  ggsave(paste(randomForestDataVisualizations, paste(file.prefix, '-confusion-matrix.png', sep = ''), sep = '/'), plot = pc)
+  print('Created plot of confusion matrix for random forest')
 }
 ################################################################ 
 

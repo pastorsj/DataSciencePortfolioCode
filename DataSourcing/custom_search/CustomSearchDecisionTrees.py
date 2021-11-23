@@ -41,8 +41,7 @@ class CustomSearchDecisionTrees:
         self._file_storage.create_directory_if_not_exists(self.__decision_tree_data_visualizations_location)
         self._additional_stop_words = ['title', 'journal', 'volume', 'author', 'scholar', 'article', 'issue', 'food',
                                        'hunger', 'people', 'million', 'world', 'security', 'insecurity', 'covid',
-                                       'locust',
-                                       'drought', 'ebola']
+                                       'locust', 'drought', 'ebola']
         self._defined_stop_words = set(ENGLISH_STOP_WORDS.union(self._additional_stop_words))
 
     def filter_non_english_words(self, corpus):

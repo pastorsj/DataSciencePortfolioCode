@@ -14,6 +14,10 @@ class S3Location(Enum):
     CLUSTERED_DATA_VISUALIZATIONS = 'clustered_data_visualizations'
     DECISION_TREE_DATA = 'decision_tree_data'
     DECISION_TREE_DATA_VISUALIZATIONS = 'decision_tree_data_visualizations'
+    NAIVE_BAYES_DATA = 'naive_bayes_data'
+    NAIVE_BAYES_DATA_VISUALIZATIONS = 'naive_bayes_data_visualizations'
+    SVM_DATA = 'svm_data'
+    SVM_DATA_VISUALIZATIONS = 'svm_data_visualizations'
 
 
 class S3Api:

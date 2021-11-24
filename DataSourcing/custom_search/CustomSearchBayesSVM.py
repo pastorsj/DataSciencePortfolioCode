@@ -19,7 +19,7 @@ lemmatizer = WordNetLemmatizer()
 class CustomSearchNB_SVM:
 
     def __init__(self, file_storage, s3_api):
-        """ Create a new instance of the CustomSearchDecisionTrees class
+        """ Create a new instance of the CustomSearchNB_SVM class
 
         Parameters
         ----------

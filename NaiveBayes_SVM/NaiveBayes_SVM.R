@@ -125,7 +125,7 @@ df.clean <- df.clean %>%
   dplyr::select(-Date)
 write.csv(as.data.frame(df.clean), paste(naiveBayesData, 'raw-nb-data.csv', sep = '/'), row.names = FALSE)
 
-pairs.panels(df.clean %>% dplyr::select(-State))
+pairs.panels(df.clean %>% dplyr::select(-Region, -State))
 dev.copy(png, filename = paste(naiveBayesDataVisualizations, 'raw-nb-data.png', sep = '/'), width = 1200, height = 800)
 dev.off()
 
@@ -201,7 +201,7 @@ plot(nb.model.2, which = 'Enough', prob = "conditional")
 dev.off()
 write.csv(nb.model.2$tables$Enough, paste(naiveBayesData, 'enough_variable_statistics.csv', sep = '/'), row.names = FALSE)
 
-png(paste(naiveBayesDataVisualizations, 'lock_variety_variable_density_plot.png', sep = '/'), width = 6, height = 4, units = 'in', res = 400)
+png(paste(naiveBayesDataVisualizations, 'lack_variety_variable_density_plot.png', sep = '/'), width = 6, height = 4, units = 'in', res = 400)
 plot(nb.model.2, which = 'LackVariety', prob = "conditional")
 dev.off()
 write.csv(nb.model.2$tables$LackVariety, paste(naiveBayesData, 'lack_variety_variable_statistics.csv', sep = '/'), row.names = FALSE)
@@ -276,7 +276,7 @@ labels.test.svm <- test.sample.svm$Region
 test.sample.svm <- test.sample.svm %>% dplyr::select(-Region)
 
 ### Polynomial Kernel
-svm.model.poly <- svm(Region ~ FoodManufacturingEmploymentRate + FoodHospitalityEmploymentRate,
+svm.model.poly <- svm(Region ~ NotEnough + FoodHospitalityEmploymentRate,
                       data = training.sample.svm,
                       kernel = "polynomial",
                       cost = 0.1)
@@ -295,10 +295,10 @@ cfm.svm <- as_tibble(table(svm.prediction.poly, labels.test.svm))
                                rotate_y_text = FALSE,
                                rm_zero_text = FALSE,
                                palette = "Greens"))
-ggsave(paste(svmDataVisualizations, 'svm_poly_confusion_matrix.png', sep = '/'), plot = pc.2)
+ggsave(paste(svmDataVisualizations, 'svm_poly_confusion_matrix.png', sep = '/'), plot = pc.svm)
 
 png(paste(svmDataVisualizations, 'svm_poly_classification.png', sep = '/'), width = 6, height = 4, units = 'in', res = 400)
-plot(svm.model.poly, training.sample.svm, formula = FoodManufacturingEmploymentRate ~ FoodHospitalityEmploymentRate)
+plot(svm.model.poly, training.sample.svm, formula = NotEnough ~ FoodHospitalityEmploymentRate)
 dev.off()
 
 c.m <- as.data.frame.matrix(table(svm.prediction.poly, labels.test.svm))
@@ -308,7 +308,7 @@ write.csv(c.m, paste(svmData, 'svm_poly_confusion_matrix.csv', sep = '/'), row.n
 (misclassification.rate <- 1 - sum(diag(table(svm.prediction.poly, labels.test.svm)))/sum(table(svm.prediction.poly, labels.test.svm)))
 
 ### Linear Kernel
-svm.model.linear <- svm(Region ~ FoodManufacturingEmploymentRate + FoodHospitalityEmploymentRate,
+svm.model.linear <- svm(Region ~ NotEnough + FoodHospitalityEmploymentRate,
                       data = training.sample.svm,
                       kernel = "linear",
                       cost = 0.1)
@@ -327,10 +327,10 @@ cfm.svm.linear <- as_tibble(table(svm.prediction.linear, labels.test.svm))
                                  rotate_y_text = FALSE,
                                  rm_zero_text = FALSE,
                                  palette = "Greens"))
-ggsave(paste(svmDataVisualizations, 'svm_linear_confusion_matrix.png', sep = '/'), plot = pc.2)
+ggsave(paste(svmDataVisualizations, 'svm_linear_confusion_matrix.png', sep = '/'), plot = pc.svm.linear)
 
 png(paste(svmDataVisualizations, 'svm_linear_classification.png', sep = '/'), width = 6, height = 4, units = 'in', res = 400)
-plot(svm.model.linear, training.sample.svm, formula = FoodManufacturingEmploymentRate ~ FoodHospitalityEmploymentRate)
+plot(svm.model.linear, training.sample.svm, formula = NotEnough ~ FoodHospitalityEmploymentRate)
 dev.off()
 
 c.m <- as.data.frame.matrix(table(svm.prediction.linear, labels.test.svm))
@@ -340,7 +340,7 @@ write.csv(c.m, paste(svmData, 'svm_linear_confusion_matrix.csv', sep = '/'), row
 (misclassification.rate <- 1 - sum(diag(table(svm.prediction.linear, labels.test.svm)))/sum(table(svm.prediction.linear, labels.test.svm)))
 
 ### Sigmoid Kernel
-svm.model.sigmoid <- svm(Region ~ FoodManufacturingEmploymentRate + FoodHospitalityEmploymentRate,
+svm.model.sigmoid <- svm(Region ~ NotEnough + FoodHospitalityEmploymentRate,
                         data = training.sample.svm,
                         kernel = "sigmoid",
                         cost = 0.1)
@@ -359,10 +359,10 @@ cfm.svm.sigmoid <- as_tibble(table(svm.prediction.sigmoid, labels.test.svm))
                                         rotate_y_text = FALSE,
                                         rm_zero_text = FALSE,
                                         palette = "Greens"))
-ggsave(paste(svmDataVisualizations, 'svm_sigmoid_confusion_matrix.png', sep = '/'), plot = pc.2)
+ggsave(paste(svmDataVisualizations, 'svm_sigmoid_confusion_matrix.png', sep = '/'), plot = pc.svm.sigmoid)
 
 png(paste(svmDataVisualizations, 'svm_sigmoid_classification.png', sep = '/'), width = 6, height = 4, units = 'in', res = 400)
-plot(svm.model.sigmoid, training.sample.svm, formula = FoodManufacturingEmploymentRate ~ FoodHospitalityEmploymentRate)
+plot(svm.model.sigmoid, training.sample.svm, formula = NotEnough ~ FoodHospitalityEmploymentRate)
 dev.off()
 
 c.m <- as.data.frame.matrix(table(svm.prediction.sigmoid, labels.test.svm))
@@ -372,7 +372,7 @@ write.csv(c.m, paste(svmData, 'svm_sigmoid_confusion_matrix.csv', sep = '/'), ro
 (misclassification.rate <- 1 - sum(diag(table(svm.prediction.sigmoid, labels.test.svm)))/sum(table(svm.prediction.sigmoid, labels.test.svm)))
 
 ### Radial Basis Kernel
-svm.model.radial <- svm(Region ~ FoodManufacturingEmploymentRate + FoodHospitalityEmploymentRate,
+svm.model.radial <- svm(Region ~ NotEnough + FoodHospitalityEmploymentRate,
                          data = training.sample.svm,
                          kernel = "radial",
                          cost = 0.1)
@@ -391,10 +391,10 @@ cfm.svm.radial <- as_tibble(table(svm.prediction.radial, labels.test.svm))
                                          rotate_y_text = FALSE,
                                          rm_zero_text = FALSE,
                                          palette = "Greens"))
-ggsave(paste(svmDataVisualizations, 'svm_radial_confusion_matrix.png', sep = '/'), plot = pc.2)
+ggsave(paste(svmDataVisualizations, 'svm_radial_confusion_matrix.png', sep = '/'), plot = pc.svm.radial)
 
-png(paste(svmDataVisualizations, 'svm_radical_classification.png', sep = '/'), width = 6, height = 4, units = 'in', res = 400)
-plot(svm.model.radial, training.sample.svm, formula = FoodManufacturingEmploymentRate ~ FoodHospitalityEmploymentRate)
+png(paste(svmDataVisualizations, 'svm_radial_classification.png', sep = '/'), width = 6, height = 4, units = 'in', res = 400)
+plot(svm.model.radial, training.sample.svm, formula = NotEnough ~ FoodHospitalityEmploymentRate)
 dev.off()
 
 c.m <- as.data.frame.matrix(table(svm.prediction.radial, labels.test.svm))
@@ -403,11 +403,11 @@ write.csv(c.m, paste(svmData, 'svm_radial_confusion_matrix.csv', sep = '/'), row
 
 (misclassification.rate <- 1 - sum(diag(table(svm.prediction.radial, labels.test.svm)))/sum(table(svm.prediction.radial, labels.test.svm)))
 
-### Best Version (Kernel = Radial and Cost = 0.5)
+### Best Version (Kernel = Radial and Cost = 1000)
 svm.model.best <- svm(Region ~ .,
                         data = training.sample.svm,
                         kernel = "radial",
-                        cost = 0.5)
+                        cost = 1000)
 
 svm.prediction.best <- predict(svm.model.best, test.sample.svm, type = "class")
 
@@ -423,7 +423,7 @@ cfm.svm.best <- as_tibble(table(svm.prediction.best, labels.test.svm))
                                         rotate_y_text = FALSE,
                                         rm_zero_text = FALSE,
                                         palette = "Greens"))
-ggsave(paste(svmDataVisualizations, 'svm_best_confusion_matrix.png', sep = '/'), plot = pc.2)
+ggsave(paste(svmDataVisualizations, 'svm_best_confusion_matrix.png', sep = '/'), plot = pc.svm.best)
 
 c.m <- as.data.frame.matrix(table(svm.prediction.best, labels.test.svm))
 c.m <- cbind(Label = rownames(c.m), c.m)

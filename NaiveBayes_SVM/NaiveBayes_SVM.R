@@ -279,7 +279,7 @@ test.sample.svm <- test.sample.svm %>% dplyr::select(-Region)
 svm.model.poly <- svm(Region ~ NotEnough + FoodHospitalityEmploymentRate,
                       data = training.sample.svm,
                       kernel = "polynomial",
-                      cost = 0.1)
+                      cost = 100)
 
 svm.prediction.poly <- predict(svm.model.poly, test.sample.svm, type = "class")
 
@@ -311,7 +311,7 @@ write.csv(c.m, paste(svmData, 'svm_poly_confusion_matrix.csv', sep = '/'), row.n
 svm.model.linear <- svm(Region ~ NotEnough + FoodHospitalityEmploymentRate,
                       data = training.sample.svm,
                       kernel = "linear",
-                      cost = 0.1)
+                      cost = 200)
 
 svm.prediction.linear <- predict(svm.model.linear, test.sample.svm, type = "class")
 
@@ -343,7 +343,7 @@ write.csv(c.m, paste(svmData, 'svm_linear_confusion_matrix.csv', sep = '/'), row
 svm.model.sigmoid <- svm(Region ~ NotEnough + FoodHospitalityEmploymentRate,
                         data = training.sample.svm,
                         kernel = "sigmoid",
-                        cost = 0.1)
+                        cost = 5000)
 
 svm.prediction.sigmoid <- predict(svm.model.sigmoid, test.sample.svm, type = "class")
 
@@ -375,7 +375,7 @@ write.csv(c.m, paste(svmData, 'svm_sigmoid_confusion_matrix.csv', sep = '/'), ro
 svm.model.radial <- svm(Region ~ NotEnough + FoodHospitalityEmploymentRate,
                          data = training.sample.svm,
                          kernel = "radial",
-                         cost = 0.1)
+                         cost = 2000)
 
 svm.prediction.radial <- predict(svm.model.radial, test.sample.svm, type = "class")
 

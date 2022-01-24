@@ -74,7 +74,7 @@ class CustomSearchClustering:
         normalized_label = f'normalized_{vectorizer_type}'
         not_normalized_label = f'not_{normalized_label}'
         v = vectorizer.fit_transform(df['text'])
-        vocab = vectorizer.get_feature_names()
+        vocab = vectorizer.get_feature_names_out()
         values = v.toarray()
         v_df = pd.DataFrame(values, columns=vocab)
         print('----------------------------------')

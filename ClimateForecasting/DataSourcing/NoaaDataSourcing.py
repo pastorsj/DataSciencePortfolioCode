@@ -2,6 +2,8 @@ import S3Api
 import requests
 import pandas as pd
 import urllib
+import datetime
+import matplotlib.pyplot as plt
 
 
 class NoaaDataSourcing:
@@ -22,6 +24,7 @@ class NoaaDataSourcing:
         self.version_date = 'v1.0.0-20220108'
         self._file_storage = file_storage
         self._s3_api = s3_api
+        self._file_storage.create_directory_if_not_exists('raw_data_visualizations/noaa/')
 
     def source_noaa_data(self):
         self.retrieve_daily_summary_data()
@@ -81,6 +84,26 @@ class NoaaDataSourcing:
             print(cd_df.head())
             self._file_storage.store_df_as_file(f'noaa/climate_division/{cd_file}_data.csv', cd_df)
 
+    def visualize_noaa_data(self):
+        max_temp_df = pd.read_csv('raw_data/noaa/climate_division/climdiv-tmaxst-v1.0.0-20220108_data.csv')
+        max_temp_df = max_temp_df[max_temp_df['State'] == 4]
+        max_temp_df = max_temp_df.melt(id_vars=['State', 'Division', 'Element', 'Year'],
+                                       var_name='Month',
+                                       value_name='MaxTemperature')
+        max_temp_df['Month'] = max_temp_df['Month'].apply(lambda x: datetime.datetime.strptime(x, "%B").month)
+        max_temp_df['DATE'] = pd.to_datetime(max_temp_df[['Year', 'Month']].assign(DAY=1))
+        max_temp_df = max_temp_df.sort_values(by=['DATE'])
+        print(max_temp_df)
+
+        plt.figure()
+        plt.plot(max_temp_df['DATE'], max_temp_df['MaxTemperature'], color="red")
+        plt.xlabel('Time')
+        plt.xticks([])
+        plt.ylabel('Max Temperature')
+        plt.title('Max Temperature over Time in California')
+        plt.savefig('raw_data_visualizations/noaa/temp_over_time.svg', format='svg')
+        plt.savefig('raw_data_visualizations/noaa/temp_over_time.png')
+        plt.show()
 
 
 if __name__ == '__main__':
@@ -92,4 +115,4 @@ if __name__ == '__main__':
     noaa_data_sourcing_instance = NoaaDataSourcing(FileStorage(), S3Api.S3Api())
 
     print('Retrieving raw noaa data')
-    noaa_data_sourcing_instance.retrieve_climate_division_data()
+    noaa_data_sourcing_instance.visualize_noaa_data()

@@ -34,6 +34,8 @@ class UsWildfireData:
         print(fires_df.head())
         print(len(fires_df))
         print(fires_df.columns)
+        fires_df['DISCOVERY_DATE'] = pd.to_datetime(fires_df['DISCOVERY_DATE'] - pd.Timestamp(0).to_julian_date(), unit='D')
+        fires_df['CONT_DATE'] = pd.to_datetime(fires_df['CONT_DATE'] - pd.Timestamp(0).to_julian_date(), unit='D')
         self._file_storage.store_df_as_file('usda/wildfire_data.csv', fires_df)
 
     def visualize_raw_wildfire_data(self):
@@ -62,5 +64,5 @@ if __name__ == '__main__':
     noaa_data_sourcing_instance = UsWildfireData(FileStorage(), S3Api.S3Api())
 
     print('Retrieving raw wildfire data')
-    noaa_data_sourcing_instance.visualize_raw_wildfire_data()
+    noaa_data_sourcing_instance.retrieve_wildfire_data_sql()
 

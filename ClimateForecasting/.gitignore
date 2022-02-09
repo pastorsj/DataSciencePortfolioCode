@@ -1,1 +1,4 @@
 .env
+cleaned_data_visualizations/
+cleaned_data/
+eda/

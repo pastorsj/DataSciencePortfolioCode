@@ -3,7 +3,7 @@ if (!require("pacman")) {
   install.packages("pacman")
 }
 
-pacman::p_load(tidyverse, gridExtra) 
+pacman::p_load(tidyverse, gridExtra, maps) 
 # ---------------------------------------------
 
 climate.div.states <- c('Alabama', 'Arizona', 'Arkansas', 'California', 
@@ -29,6 +29,27 @@ climate.div.states.num <- c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10',
 climate.div.states.df <- data.frame(Number = as.numeric(climate.div.states.num), 
                                     State = climate.div.states)
 
+
+
+#' Creates a directory if it does not exist yet
+#' 
+#' @param path A path to create
+#' @examples 
+#' createDirectoryIfNotExists('path/to/file')
+createDirectoryIfNotExists <- function(path) {
+  # Create the directory if it doesn't exist.
+  if (dir.exists(path) == FALSE) {
+    dir.create(path, recursive = TRUE)
+  }
+}
+
+
+createDirectoryIfNotExists('../cleaned_data/weather')
+createDirectoryIfNotExists('../cleaned_data/floods')
+createDirectoryIfNotExists('../cleaned_data/wildfire')
+createDirectoryIfNotExists('../cleaned_data_visualizations/weather')
+createDirectoryIfNotExists('../cleaned_data_visualizations/floods')
+createDirectoryIfNotExists('../cleaned_data_visualizations/wildfire')
 
 
 # Let's clean the drought data
@@ -115,8 +136,11 @@ cleaned.min.temp.df <- cleaned.min.temp.df %>%
 cleaned.df <- merge(x = cleaned.df, y = cleaned.min.temp.df, by = c('State', 'Date'), all = TRUE)
 
 cleaned.df$StateAbbreviation <- as.factor(state.abb[match(cleaned.df$State,state.name)])
-cleaned.df <- cleaned.df[, c(2,1,9,4,3,5,6,7,8)]
-write.csv(cleaned.df, '../cleaned_data/weather_data.csv', row.names = FALSE)
+capitals <- us.cities[us.cities$capital == 2,]
+cleaned.df$Longitude <- capitals[match(cleaned.df$StateAbbreviation, capitals$country.etc),]$long
+cleaned.df$Latitude <- capitals[match(cleaned.df$StateAbbreviation, capitals$country.etc),]$lat
+cleaned.df <- cleaned.df[, c(2,1,9,4,3,5,6,7,8,10,11)]
+write.csv(cleaned.df, '../cleaned_data/weather/weather_data.csv', row.names = FALSE)
 
 print(str(cleaned.df))
 print(dim(cleaned.df))
@@ -142,7 +166,7 @@ cleaned.wildfire.df <- cleaned.wildfire.df[, c(1,2,7,3,4,5,6)]
 
 print(str(cleaned.wildfire.df))
 print(head(cleaned.wildfire.df))
-write.csv(cleaned.wildfire.df, '../cleaned_data/wildfire_data.csv', row.names = FALSE)
+write.csv(cleaned.wildfire.df, '../cleaned_data/wildfire/wildfire_data.csv', row.names = FALSE)
 
 # Aggregate wildfire data by state, month and year
 agg.wildfire.df <- cleaned.wildfire.df %>%
@@ -172,7 +196,7 @@ cleaned.agg.wildfire.df <- cleaned.agg.wildfire.df[, c(2,3,1,4,5)]
 
 print(head(cleaned.agg.wildfire.df))
 print(str(cleaned.agg.wildfire.df))
-write.csv(cleaned.agg.wildfire.df, '../cleaned_data/aggregated_wildfire_data.csv', row.names = FALSE)
+write.csv(cleaned.agg.wildfire.df, '../cleaned_data/wildfire/aggregated_wildfire_data.csv', row.names = FALSE)
 
 # Let's clean flood data
 flood.data <- read.csv('../raw_data/flood/flood_data.csv')
@@ -194,7 +218,7 @@ cleaned.flood.df <- flood.data %>%
 
 print(str(cleaned.flood.df))
 print(head(cleaned.flood.df))
-write.csv(cleaned.flood.df, '../cleaned_data/flood_data.csv', row.names = FALSE)
+write.csv(cleaned.flood.df, '../cleaned_data/floods/flood_data.csv', row.names = FALSE)
 
 # Let's aggregate the flood data
 agg.flood.df <- cleaned.flood.df %>%
@@ -221,4 +245,4 @@ cleaned.agg.flood.df <- cleaned.agg.flood.df[, c(2,3,1,4)]
 
 print(head(cleaned.agg.flood.df))
 print(str(cleaned.agg.flood.df))
-write.csv(cleaned.agg.flood.df, '../cleaned_data/aggregated_flood_data.csv', row.names = FALSE)
+write.csv(cleaned.agg.flood.df, '../cleaned_data/floods/aggregated_flood_data.csv', row.names = FALSE)

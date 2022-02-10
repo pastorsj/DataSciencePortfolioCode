@@ -94,3 +94,5 @@ tseries::adf.test(flood.ts.ca)
 ggsave('../eda_visualizations/floods/flood_stationary_acf_plot.svg', width = 8, height = 6, units = 'in')
 ggAcf(flood.ts.ca, lag.max = 20)
 dev.off()
+
+readr::write_csv(as.data.frame(tsibble::as_tsibble(flood.ts.ca)), '../cleaned_data/floods/flood_time_series.csv')

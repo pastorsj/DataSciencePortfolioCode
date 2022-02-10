@@ -110,3 +110,5 @@ dev.off()
 ggsave('../eda_visualizations/drought/drought_stationary_acf_plot.svg', width = 8, height = 6, units = 'in')
 ggAcf(log(drought.ts.ca))
 dev.off()
+
+readr::write_csv(as.data.frame(tsibble::as_tsibble(drought.ts.ca)), '../cleaned_data/weather/drought_time_series.csv')

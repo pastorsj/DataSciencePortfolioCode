@@ -106,3 +106,5 @@ tseries::adf.test(temperature.ts.ca)
 ggsave('../eda_visualizations/weather/temperature_stationary_acf_plot.svg', width = 8, height = 6, units = 'in')
 ggAcf(diff(temperature.ts.ca - temperature.decomp$seasonal))
 dev.off()
+
+readr::write_csv(as.data.frame(tsibble::as_tsibble(temperature.ts.ca)), '../cleaned_data/weather/temperature_time_series.csv')

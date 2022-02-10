@@ -4,7 +4,8 @@ if (!require("pacman")) {
 }
 
 pacman::p_load(tidyverse, gridExtra, TSstudio, 
-               fpp, forecast, astsa, lubridate, zoo) 
+               fpp, forecast, astsa, lubridate, 
+               zoo, fpp) 
 # ---------------------------------------------
 
 wildfire.df <- read.csv('../cleaned_data/wildfire/aggregated_wildfire_data.csv') %>% drop_na()
@@ -55,7 +56,7 @@ html.viz <- ts_seasonal(wildfire.ts.ca, type = 'all', title = 'Seasonality Plot 
 htmlwidgets::saveWidget(html.viz, "../eda_visualizations/wildfire/wildfire_seasonality.html")
 
 html.viz <- ts_heatmap(wildfire.ts.ca, title = 'Seasonality Heatmap of California Wildfires')
-htmlwidgets::saveWidget(html.viz, "../eda_visualizations/wildfire/wildfire_seasonality_heatmap.html")
+htmlwidgets::saveWidget(html.viz, "../eda_visualizations/wildfire/")
 
 # Take a look at the trend
 wildfire.trend <- ma(wildfire.ts.ca, order = 12, centre = T)
@@ -89,13 +90,11 @@ dev.off()
 
 acf.1 <- ggAcf(wildfire.ts.ca) +
   ggtitle("ACF of California Wildfires Time Series")
-acf.2 <- ggAcf(diff(wildfire.ts.ca)) +
-  ggtitle("ACF of California Wildfires Time Series (1-Diff)")
-acf.3 <- ggAcf(diff(diff(wildfire.ts.ca))) +
-  ggtitle("ACF of California Wildfires Time Series (2-Diff)")
+acf.2 <- ggAcf(wildfire.ts.ca - wildfire.decomp$seasonal) +
+  ggtitle("ACF of California Wildfires Time Series (Remove Seasonal)")
 
-png('../eda_visualizations/wildfire/combined_wildfire_acf_plots.png', width = 8, height = 8, units = 'in', res = 400)
-grid.arrange(acf.1, acf.2, acf.3, ncol = 1)
+png('../eda_visualizations/wildfire/combined_wildfire_acf_plots.png', width = 10, height = 8, units = 'in', res = 400)
+grid.arrange(acf.1, acf.2, ncol = 1)
 dev.off()
 
 # Confirm stationarity using Augmented Dickey Fuller Test
@@ -103,13 +102,7 @@ tseries::adf.test(wildfire.ts.ca)
 
 # Final plot of ACF after diff
 ggsave('../eda_visualizations/wildfire/wildfire_stationary_acf_plot.svg', width = 8, height = 6, units = 'in')
-ggAcf(diff(diff(wildfire.ts.ca)))
+ggAcf(wildfire.ts.ca - wildfire.decomp$seasonal)
 dev.off()
 
-# Plot of time series with before and after
-png('../eda_visualizations/wildfire/time_series_diff_wildfires.png', width = 8, height = 8, units = 'in', res = 400)
-par(mfrow = c(3, 1))
-plot(wildfire.ts.ca, xlab = "Year (1992-2016)", ylab = 'Number of Wildfires', main = 'Comparison of Differenciated Wildfire Time Series')
-plot(diff(wildfire.ts.ca), xlab = "Year (1992-2016)", ylab = 'Number of Wildfires')
-plot(diff(diff(wildfire.ts.ca)), xlab = "Year (1992-2016)", ylab = 'Number of Wildfires')
-dev.off()
+readr::write_csv(as.data.frame(tsibble::as_tsibble(wildfire.ts.ca)), '../cleaned_data/wildfire/wildfire_time_series.csv')

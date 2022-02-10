@@ -10,6 +10,7 @@ class S3Location(Enum):
     RAW_DATA_VISUALIZATIONS = 'raw_data_visualizations'
     CLEANED_DATA = 'cleaned_data'
     CLEANED_DATA_VISUALIZATIONS = 'cleaned_data_visualizations'
+    EDA_VISUALIZATIONS = 'eda_visualizations'
 
 
 class S3Api:

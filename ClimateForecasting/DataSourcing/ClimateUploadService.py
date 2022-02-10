@@ -59,7 +59,7 @@ class ClimateUploadService:
         for file in html_visualizations:
             print('Opening file', file)
             contents = codecs.open(file, 'r')
-            print('Attempting to upload raw data visualizations to s3')
+            print('Attempting to upload cleaned data visualizations to s3')
             self._s3_api.upload_html(contents.read(), file.replace('cleaned_data_visualizations/', ''), S3Api.S3Location.CLEANED_DATA_VISUALIZATIONS)
             contents.close()
 
@@ -94,6 +94,37 @@ class ClimateUploadService:
             print('Uploading', file, 'to S3')
             print('Successfully uploaded')
 
+    def store_eda_visualizations(self):
+        print('Store eda visualizations in S3')
+
+        html_visualizations = list(glob.iglob(f'eda_visualizations/**/*.html', recursive=True))
+        for file in html_visualizations:
+            print('Opening file', file)
+            contents = codecs.open(file, 'r')
+            print('Attempting to upload eda visualizations to s3')
+            self._s3_api.upload_html(contents.read(), file.replace('cleaned_data_visualizations/', ''), S3Api.S3Location.EDA_VISUALIZATIONS)
+            contents.close()
+
+        png_visualizations = list(glob.iglob(f'eda_visualizations/**/*.png', recursive=True))
+        for file in png_visualizations:
+            print('Opening file', file)
+            png = open(file, "rb")
+            print('Attempting to upload eda visualizations to s3')
+            self._s3_api.upload_png(png, file.replace('cleaned_data_visualizations/', ''), S3Api.S3Location.EDA_VISUALIZATIONS)
+            print('Uploading', file, 'to S3')
+            print('Successfully uploaded')
+            png.close()
+
+        svg_visualizations = list(glob.iglob(f'eda_visualizations/**/*.svg', recursive=True))
+        for file in svg_visualizations:
+            print('Opening file', file)
+            svg = open(file, "rb")
+            print('Attempting to upload eda visualizations to s3')
+            self._s3_api.upload_svg(svg, file.replace('cleaned_data_visualizations/', ''), S3Api.S3Location.EDA_VISUALIZATIONS)
+            print('Uploading', file, 'to S3')
+            print('Successfully uploaded')
+            svg.close()
+
 
 if __name__ == '__main__':
     from dotenv import load_dotenv
@@ -104,4 +135,4 @@ if __name__ == '__main__':
     climate_upload_service = ClimateUploadService(FileStorage(), S3Api.S3Api())
 
     print('Upload data to S3')
-    climate_upload_service.store_cleaned_data_visualizations()
+    climate_upload_service.store_eda_visualizations()

@@ -99,16 +99,17 @@ acf.1 <- ggAcf(drought.ts.ca) +
   ggtitle("ACF of California Droughts Time Series")
 acf.2 <- ggAcf(diff(drought.ts.ca)) +
   ggtitle("ACF of California Droughts Time Series (1-Diff)")
-acf.3 <- ggAcf(log(drought.ts.ca)) +
-  ggtitle("ACF of California Droughts Time Series (Log)")
+acf.3 <- ggAcf(diff(log(drought.ts.ca))) +
+  ggtitle("ACF of California Droughts Time Series (1-Diff, Log)")
 
 png('../eda_visualizations/drought/combined_drought_acf_plots.png', width = 8, height = 8, units = 'in', res = 400)
 grid.arrange(acf.1, acf.2, acf.3, ncol = 1)
 dev.off()
 
-# Final plot of ACF after log to remove heteroskedascity
+# Final plot of ACF after log to remove heteroskedascity/correlation
 ggsave('../eda_visualizations/drought/drought_stationary_acf_plot.svg', width = 8, height = 6, units = 'in')
-ggAcf(log(drought.ts.ca))
+ggAcf(diff(log(drought.ts.ca))) +
+  ggtitle("ACF of California Droughts Time Series")
 dev.off()
 
 readr::write_csv(as.data.frame(tsibble::as_tsibble(drought.ts.ca)), '../cleaned_data/weather/drought_time_series.csv')

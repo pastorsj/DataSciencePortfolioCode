@@ -92,7 +92,8 @@ tseries::adf.test(flood.ts.ca)
 
 # Final plot of ACF after diff
 ggsave('../eda_visualizations/floods/flood_stationary_acf_plot.svg', width = 8, height = 6, units = 'in')
-ggAcf(flood.ts.ca, lag.max = 20)
+ggAcf(flood.ts.ca, lag.max = 20) +
+  ggtitle("ACF Plot of California Floods")
 dev.off()
 
 readr::write_csv(as.data.frame(tsibble::as_tsibble(flood.ts.ca)), '../cleaned_data/floods/flood_time_series.csv')

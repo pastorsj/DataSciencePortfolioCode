@@ -32,7 +32,7 @@ dev.off()
 
 html.viz <- ts_plot(temperature.ts.ca, 
                     Xtitle = "Year (1895-2021)", 
-                    Ytitle = 'Average Temperature', 
+                    Ytitle = 'Average Temperature',
                     title = 'Average Temperature in California')
 htmlwidgets::saveWidget(html.viz, "../eda_visualizations/weather/temperature_time_series.html")
 

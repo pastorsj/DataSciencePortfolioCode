@@ -106,3 +106,7 @@ class S3Api:
     def upload_png(self, png, file_name, location):
         s3_object = self._s3.Object(self._s3_bucket, f'{location.value}/{file_name}')
         s3_object.put(Body=png, ContentType='image/png')
+
+    def upload_gif(self, gif, file_name, location):
+        s3_object = self._s3.Object(self._s3_bucket, f'{location.value}/{file_name}')
+        s3_object.put(Body=gif, ContentType='image/gif')

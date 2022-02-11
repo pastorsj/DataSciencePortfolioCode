@@ -83,6 +83,16 @@ class ClimateUploadService:
             print('Successfully uploaded')
             svg.close()
 
+        gif_visualizations = list(glob.iglob(f'cleaned_data_visualizations/**/*.gif', recursive=True))
+        for file in gif_visualizations:
+            print('Opening file', file)
+            gif = open(file, "rb")
+            print('Attempting to upload cleaned data visualizations to s3')
+            self._s3_api.upload_gif(gif, file.replace('cleaned_data_visualizations/', ''), S3Api.S3Location.CLEANED_DATA_VISUALIZATIONS)
+            print('Uploading', file, 'to S3')
+            print('Successfully uploaded')
+            gif.close()
+
     def store_cleaned_data(self):
         print('Store cleaned data in S3')
         csv_data = list(glob.iglob(f'cleaned_data/**/*.csv', recursive=True))
@@ -96,14 +106,6 @@ class ClimateUploadService:
 
     def store_eda_visualizations(self):
         print('Store eda visualizations in S3')
-
-        html_visualizations = list(glob.iglob(f'eda_visualizations/**/*.html', recursive=True))
-        for file in html_visualizations:
-            print('Opening file', file)
-            contents = codecs.open(file, 'r')
-            print('Attempting to upload eda visualizations to s3')
-            self._s3_api.upload_html(contents.read(), file.replace('eda_visualizations/', ''), S3Api.S3Location.EDA_VISUALIZATIONS)
-            contents.close()
 
         png_visualizations = list(glob.iglob(f'eda_visualizations/**/*.png', recursive=True))
         for file in png_visualizations:
@@ -135,4 +137,4 @@ if __name__ == '__main__':
     climate_upload_service = ClimateUploadService(FileStorage(), S3Api.S3Api())
 
     print('Upload data to S3')
-    climate_upload_service.store_eda_visualizations()
+    climate_upload_service.store_cleaned_data_visualizations()

@@ -53,6 +53,7 @@ createDirectoryIfNotExists('../eda_visualizations/wildfire')
 createDirectoryIfNotExists('../eda_visualizations/drought')
 createDirectoryIfNotExists('../cleaned_data_visualizations/weather')
 createDirectoryIfNotExists('../cleaned_data_visualizations/floods')
+createDirectoryIfNotExists('../cleaned_data_visualizations/drought')
 createDirectoryIfNotExists('../cleaned_data_visualizations/wildfire')
 
 

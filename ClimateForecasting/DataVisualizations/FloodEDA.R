@@ -96,4 +96,41 @@ ggAcf(flood.ts.ca, lag.max = 20) +
   ggtitle("ACF Plot of California Floods")
 dev.off()
 
+# Moving Average Smoothing
+viz.2 <- autoplot(flood.ts.ca, series = 'Data') +
+  autolayer(ma(flood.ts.ca, 5), series = '4 month MA') +
+  ggtitle("California Floods (4 Year Moving Average)") +
+  xlab("Year (2006-2020)") +
+  ylab("Number of Floods") +
+  scale_colour_manual(values=c("Data" = "grey50","4 month MA"="red"),
+                      breaks=c("Data","4 month MA"))
+ggsave('../eda_visualizations/floods/flood_moving_average_4_month.svg', plot = viz.2, width = 10, height = 6, units = 'in')
+
+viz.1 <- autoplot(flood.ts.ca, series = 'Data') +
+  autolayer(ma(flood.ts.ca, 13), series = '1 year MA') +
+  ggtitle("California Floods (1 Year Moving Average)") +
+  xlab("Year (2006-2020)") +
+  ylab("Number of Floods") +
+  scale_colour_manual(values=c("Data" = "grey50","1 year MA"="red"),
+                      breaks=c("Data","1 year MA"))
+ggsave('../eda_visualizations/floods/flood_moving_average_1_year.svg', plot = viz.1, width = 10, height = 6, units = 'in')
+
+viz.3 <- autoplot(flood.ts.ca, series = 'Data') +
+  autolayer(ma(flood.ts.ca, 37), series = '3 year MA') +
+  ggtitle("California Floods (3 Year Moving Average)") +
+  xlab("Year (2006-2020)") +
+  ylab("Number of Floods") +
+  scale_colour_manual(values=c("Data" = "grey50","3 year MA"="red"),
+                      breaks=c("Data","3 year MA"))
+ggsave('../eda_visualizations/floods/flood_moving_average_3_year.svg', plot = viz.3, width = 10, height = 6, units = 'in')
+
+viz.5 <- autoplot(flood.ts.ca, series = 'Data') +
+  autolayer(ma(flood.ts.ca, 61), series = '5 year MA') +
+  ggtitle("California Floods (5 Year Moving Average)") +
+  xlab("Year (2006-2020)") +
+  ylab("Number of Floods") +
+  scale_colour_manual(values=c("Data" = "grey50","5 year MA"="red"),
+                      breaks=c("Data","5 year MA"))
+ggsave('../eda_visualizations/floods/flood_moving_average_5_year.svg', plot = viz.5, width = 10, height = 6, units = 'in')
+
 readr::write_csv(as.data.frame(tsibble::as_tsibble(flood.ts.ca)), '../cleaned_data/floods/flood_time_series.csv')

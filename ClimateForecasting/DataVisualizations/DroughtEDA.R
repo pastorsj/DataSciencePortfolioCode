@@ -112,4 +112,41 @@ ggAcf(diff(log(drought.ts.ca))) +
   ggtitle("ACF of California Droughts Time Series")
 dev.off()
 
+# Moving Average Smoothing
+viz.2 <- autoplot(drought.ts.ca, series = 'Data') +
+  autolayer(ma(drought.ts.ca, 5), series = '4 month MA') +
+  ggtitle("California Droughts (4 Year Moving Average)") +
+  xlab("Year (1895-2021)") +
+  ylab("Drought Index") +
+  scale_colour_manual(values=c("Data" = "grey50","4 month MA"="red"),
+                      breaks=c("Data","4 month MA"))
+ggsave('../eda_visualizations/drought/drought_moving_average_4_month.svg', plot = viz.2, width = 10, height = 6, units = 'in')
+
+viz.1 <- autoplot(drought.ts.ca, series = 'Data') +
+  autolayer(ma(drought.ts.ca, 13), series = '1 year MA') +
+  ggtitle("California Droughts (1 Year Moving Average)") +
+  xlab("Year (1895-2021)") +
+  ylab("Drought Index") +
+  scale_colour_manual(values=c("Data" = "grey50","1 year MA"="red"),
+                      breaks=c("Data","1 year MA"))
+ggsave('../eda_visualizations/drought/drought_moving_average_1_year.svg', plot = viz.1, width = 10, height = 6, units = 'in')
+
+viz.5 <- autoplot(drought.ts.ca, series = 'Data') +
+  autolayer(ma(drought.ts.ca, 61), series = '5 year MA') +
+  ggtitle("California Droughts (5 Year Moving Average)") +
+  xlab("Year (1895-2021)") +
+  ylab("Drought Index") +
+  scale_colour_manual(values=c("Data" = "grey50","5 year MA"="red"),
+                      breaks=c("Data","5 year MA"))
+ggsave('../eda_visualizations/drought/drought_moving_average_5_year.svg', plot = viz.5, width = 10, height = 6, units = 'in')
+
+viz.20 <- autoplot(drought.ts.ca, series = 'Data') +
+  autolayer(ma(drought.ts.ca, 241), series = '20 year MA') +
+  ggtitle("California Droughts (20 Year Moving Average)") +
+  xlab("Year (1895-2021)") +
+  ylab("Drought Index") +
+  scale_colour_manual(values=c("Data" = "grey50","20 year MA"="red"),
+                      breaks=c("Data","20 year MA"))
+ggsave('../eda_visualizations/drought/drought_moving_average_20_year.svg', plot = viz.20, width = 10, height = 6, units = 'in')
+
 readr::write_csv(as.data.frame(tsibble::as_tsibble(drought.ts.ca)), '../cleaned_data/weather/drought_time_series.csv')

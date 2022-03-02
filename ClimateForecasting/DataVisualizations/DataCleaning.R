@@ -55,6 +55,14 @@ createDirectoryIfNotExists('../cleaned_data_visualizations/weather')
 createDirectoryIfNotExists('../cleaned_data_visualizations/floods')
 createDirectoryIfNotExists('../cleaned_data_visualizations/drought')
 createDirectoryIfNotExists('../cleaned_data_visualizations/wildfire')
+createDirectoryIfNotExists('../arma_visualizations/weather')
+createDirectoryIfNotExists('../arma_visualizations/floods')
+createDirectoryIfNotExists('../arma_visualizations/drought')
+createDirectoryIfNotExists('../arma_visualizations/wildfire')
+createDirectoryIfNotExists('../arma_data/weather')
+createDirectoryIfNotExists('../arma_data/floods')
+createDirectoryIfNotExists('../arma_data/drought')
+createDirectoryIfNotExists('../arma_data/wildfire')
 
 
 # Let's clean the drought data

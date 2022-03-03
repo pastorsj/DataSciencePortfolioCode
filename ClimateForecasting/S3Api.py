@@ -11,6 +11,8 @@ class S3Location(Enum):
     CLEANED_DATA = 'cleaned_data'
     CLEANED_DATA_VISUALIZATIONS = 'cleaned_data_visualizations'
     EDA_VISUALIZATIONS = 'eda_visualizations'
+    ARMA_VISUALIZATIONS = 'arma_visualizations'
+    ARMA_DATA = 'arma_data'
 
 
 class S3Api:

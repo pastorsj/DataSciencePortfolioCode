@@ -127,6 +127,38 @@ class ClimateUploadService:
             print('Successfully uploaded')
             svg.close()
 
+    def store_arma_visualizations(self):
+        print('Store arma visualizations in S3')
+
+        png_visualizations = list(glob.iglob(f'arma_visualizations/**/*.png', recursive=True))
+        for file in png_visualizations:
+            print('Opening file', file)
+            png = open(file, "rb")
+            print('Attempting to upload arma visualizations to s3')
+            self._s3_api.upload_png(png, file.replace('arma_visualizations/', ''), S3Api.S3Location.ARMA_VISUALIZATIONS)
+            print('Uploading', file, 'to S3')
+            print('Successfully uploaded')
+            png.close()
+
+        svg_visualizations = list(glob.iglob(f'arma_visualizations/**/*.svg', recursive=True))
+        for file in svg_visualizations:
+            print('Opening file', file)
+            svg = open(file, "rb")
+            print('Attempting to upload arma visualizations to s3')
+            self._s3_api.upload_svg(svg, file.replace('arma_visualizations/', ''), S3Api.S3Location.ARMA_VISUALIZATIONS)
+            print('Uploading', file, 'to S3')
+            print('Successfully uploaded')
+            svg.close()
+
+        csv_data = list(glob.iglob(f'arma_data/**/*.csv', recursive=True))
+        for file in csv_data:
+            print('Opening file', file)
+            df = pd.read_csv(file)
+            print('Attempting to upload arma data to s3')
+            self._s3_api.upload_df(df, file.replace('arma_data/', ''), S3Api.S3Location.ARMA_DATA)
+            print('Uploading', file, 'to S3')
+            print('Successfully uploaded')
+
 
 if __name__ == '__main__':
     from dotenv import load_dotenv
@@ -137,4 +169,4 @@ if __name__ == '__main__':
     climate_upload_service = ClimateUploadService(FileStorage(), S3Api.S3Api())
 
     print('Upload data to S3')
-    climate_upload_service.store_cleaned_data_visualizations()
+    climate_upload_service.store_arma_visualizations()

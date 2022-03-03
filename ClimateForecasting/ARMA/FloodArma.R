@@ -17,7 +17,7 @@ flood.ts.ca <- flood.df %>%
   select(NumberOfFloods) %>%
   ts(start = c(2006, 1), end = c(2020, 12), frequency = 12)
 
-acf(flood.ts.ca, main = 'ACF of California Floods Time Series') # q = 1-2
+acf(log(flood.ts.ca + 1 - min(flood.ts.ca)), main = 'ACF of California Floods Time Series') # q = 1-2
 
 pacf(flood.ts.ca, main = 'PACF of California Floods Time Series') # p = 1-2
 

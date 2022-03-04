@@ -33,7 +33,7 @@ ggAcf(drought.ts.diff) +
   ggtitle("Diff ACF of California Droughts") #q=1-2
 dev.off()
 
-ggsave('../arma_visualizations/drought/drought_stationary_pacf_plot.svg', width = 8, height = 6, units = 'in')
+png('../arma_visualizations/drought/drought_stationary_pacf_plot.png', width = 8, height = 6, units = 'in', res = 400)
 pacf(drought.ts.diff, main = 'PACF of California Droughts') # p=1-7
 dev.off()
 

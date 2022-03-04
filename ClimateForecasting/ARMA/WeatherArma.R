@@ -33,5 +33,10 @@ autoplot(temperature.ts.ca) +
   xlab("Year (1895-2021)") +
   ylab("Average Temperature")
 
-acf(diff(temperature.ts.ca, 12), main = "ACF of Average Temperature in California Time Series")
-pacf(diff(temperature.ts.ca, 12), main = "PACF of Average Temperature in California Time Series")
+ggAcf(diff(temperature.ts.ca, 12)) +
+  ggtitle("ACF of Average Temperature in California") #q=1-2
+ggsave('../arma_visualizations/weather/temperature_stationary_acf_plot.svg', width = 8, height = 6, units = 'in')
+
+png('../arma_visualizations/weather/temperature_stationary_pacf_plot.png', width = 8, height = 6, units = 'in', res = 400)
+pacf(diff(temperature.ts.ca, 12), main = 'PACF of Average Temperature in California')#p=1-2
+dev.off()

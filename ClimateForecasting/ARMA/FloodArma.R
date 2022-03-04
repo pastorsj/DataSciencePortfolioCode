@@ -17,11 +17,22 @@ flood.ts.ca <- flood.df %>%
   select(NumberOfFloods) %>%
   ts(start = c(2006, 1), end = c(2020, 12), frequency = 12)
 
-acf(log(flood.ts.ca + 1 - min(flood.ts.ca)), main = 'ACF of California Floods Time Series') # q = 1-2
+autoplot(flood.ts.ca) +
+  ggtitle("California Floods") +
+  xlab("Year (2006-2020)") +
+  ylab("Number of Floods")
 
-pacf(flood.ts.ca, main = 'PACF of California Floods Time Series') # p = 1-2
+flood.ts.ca.log <- log(flood.ts.ca + 1)
 
-tseries::adf.test(flood.ts.ca)
+ggAcf(diff(flood.ts.ca.log)) +
+  ggtitle("ACF of California Floods") #q=1-2
+ggsave('../arma_visualizations/floods/flood_stationary_acf_plot.svg', width = 8, height = 6, units = 'in')
+
+png('../arma_visualizations/floods/flood_stationary_pacf_plot.png', width = 8, height = 6, units = 'in', res = 400)
+pacf(flood.ts.ca.log, main = 'PACF of California Floods')#p=1-2
+dev.off()
+
+tseries::adf.test(flood.ts.ca.log)
 
 i = 1
 temp = data.frame()

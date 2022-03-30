@@ -63,6 +63,8 @@ createDirectoryIfNotExists('../arma_data/weather')
 createDirectoryIfNotExists('../arma_data/floods')
 createDirectoryIfNotExists('../arma_data/drought')
 createDirectoryIfNotExists('../arma_data/wildfire')
+createDirectoryIfNotExists('../arch_data/price')
+createDirectoryIfNotExists('../arch_visualizations/price')
 
 
 # Let's clean the drought data

@@ -159,6 +159,46 @@ class ClimateUploadService:
             print('Uploading', file, 'to S3')
             print('Successfully uploaded')
 
+    def store_arch_visualizations(self):
+        print('Store arch visualizations in S3')
+
+        png_visualizations = list(glob.iglob(f'arch_visualizations/**/*.png', recursive=True))
+        for file in png_visualizations:
+            print('Opening file', file)
+            png = open(file, "rb")
+            print('Attempting to upload arch visualizations to s3')
+            self._s3_api.upload_png(png, file.replace('arch_visualizations/', ''), S3Api.S3Location.ARCH_VISUALIZATIONS)
+            print('Uploading', file, 'to S3')
+            print('Successfully uploaded')
+            png.close()
+
+        svg_visualizations = list(glob.iglob(f'arch_visualizations/**/*.svg', recursive=True))
+        for file in svg_visualizations:
+            print('Opening file', file)
+            svg = open(file, "rb")
+            print('Attempting to upload arch visualizations to s3')
+            self._s3_api.upload_svg(svg, file.replace('arch_visualizations/', ''), S3Api.S3Location.ARCH_VISUALIZATIONS)
+            print('Uploading', file, 'to S3')
+            print('Successfully uploaded')
+            svg.close()
+
+        html_visualizations = list(glob.iglob(f'arch_visualizations/**/*.html', recursive=True))
+        for file in html_visualizations:
+            print('Opening file', file)
+            contents = codecs.open(file, 'r')
+            print('Attempting to upload cleaned data visualizations to s3')
+            self._s3_api.upload_html(contents.read(), file.replace('arch_visualizations/', ''), S3Api.S3Location.ARCH_VISUALIZATIONS)
+            contents.close()
+
+        csv_data = list(glob.iglob(f'arch_data/**/*.csv', recursive=True))
+        for file in csv_data:
+            print('Opening file', file)
+            df = pd.read_csv(file)
+            print('Attempting to upload arch data to s3')
+            self._s3_api.upload_df(df, file.replace('arch_data/', ''), S3Api.S3Location.ARCH_DATA)
+            print('Uploading', file, 'to S3')
+            print('Successfully uploaded')
+
 
 if __name__ == '__main__':
     from dotenv import load_dotenv
@@ -169,4 +209,4 @@ if __name__ == '__main__':
     climate_upload_service = ClimateUploadService(FileStorage(), S3Api.S3Api())
 
     print('Upload data to S3')
-    climate_upload_service.store_arma_visualizations()
+    climate_upload_service.store_arch_visualizations()

@@ -13,6 +13,8 @@ class S3Location(Enum):
     EDA_VISUALIZATIONS = 'eda_visualizations'
     ARMA_VISUALIZATIONS = 'arma_visualizations'
     ARMA_DATA = 'arma_data'
+    ARCH_VISUALIZATIONS = 'arch_visualizations'
+    ARCH_DATA = 'arch_data'
 
 
 class S3Api:

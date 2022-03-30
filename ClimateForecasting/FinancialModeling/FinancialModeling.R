@@ -89,6 +89,10 @@ temp[which.min(temp$BIC),]
 fit <- arima(returns, order = c(1, 1, 1))
 summary(fit)
 
+png("../arch_visualizations/price/sarima_1_1_1.png", width = 8, height = 6, units = "in", res = 400)
+sarima(returns[-1, ], 1, 1, 1)
+dev.off()
+
 auto.arima(log(price.close))
 
 res.arima <- fit$res

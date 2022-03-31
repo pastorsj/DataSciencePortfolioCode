@@ -209,4 +209,4 @@ if __name__ == '__main__':
     climate_upload_service = ClimateUploadService(FileStorage(), S3Api.S3Api())
 
     print('Upload data to S3')
-    climate_upload_service.store_arch_visualizations()
+    climate_upload_service.store_arma_visualizations()

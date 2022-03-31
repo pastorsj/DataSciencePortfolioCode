@@ -38,9 +38,9 @@ ggAcf(diff(temperature.ts.ca, 12), lag.max = 100) +
   ggtitle("ACF of Average Temperature in California") # q=1-2, Q=1
 ggsave("../arma_visualizations/weather/temperature_stationary_acf_plot.svg", width = 8, height = 6, units = "in")
 
-png("../arma_visualizations/weather/temperature_stationary_pacf_plot.png", width = 8, height = 6, units = "in", res = 400)
-pacf(diff(temperature.ts.ca, 12), main = "PACF of Average Temperature in California", lag.max = 100) # p=1-2, P=1, D=1
-dev.off()
+ggPacf(diff(temperature.ts.ca, 12), lag.max = 100) +
+  ggtitle("PACF of Average Temperature in California") # q=1-2, Q=1
+ggsave("../arma_visualizations/weather/temperature_stationary_pacf_plot.svg", width = 8, height = 6, units = "in")
 
 SARIMA.c <- function(p1, p2, q1, q2, P1, P2, Q1, Q2, data) {
   temp <- c()
@@ -90,7 +90,7 @@ SARIMA.c <- function(p1, p2, q1, q2, P1, P2, Q1, Q2, data) {
   temp
 }
 
-output <- SARIMA.c(p1 = 0, p2 = 2, q1 = 0, q2 = 2, P1 = 0, P2 = 2, Q1 = 0, Q2 = 2, data = temperature.ts.ca) %>%
+output <- SARIMA.c(p1 = 0, p2 = 2, q1 = 0, q2 = 2, P1 = 1, P2 = 2, Q1 = 1, Q2 = 2, data = temperature.ts.ca) %>%
   drop_na()
 
 minaic <- output[which.min(output$AIC), ]
@@ -152,7 +152,7 @@ mse12 <- abs(mean((as.numeric(f2$mean) - as.numeric((test)))^2))
 mse13 <- abs(mean((as.numeric(f3$mean) - as.numeric((test)))^2))
 
 df <- data.frame(
-  Model = c("Arima", "Mean Forecast", "Naive", "Random Walk Forecast"),
+  Model = c("Sarima", "Mean Forecast", "Naive", "Random Walk Forecast"),
   MAE = c(mae1, mae11, mae12, mae13),
   MSE = c(mse1, mse11, mse12, mse13)
 ) %>%

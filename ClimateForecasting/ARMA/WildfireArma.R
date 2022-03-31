@@ -30,9 +30,9 @@ ggAcf(diff(wildfire.ts.ca.log, 12), lag.max = 100) +
   ggtitle("ACF of California Wildfires") # q=1-2
 ggsave("../arma_visualizations/wildfire/wildfire_stationary_acf_plot.svg", width = 8, height = 6, units = "in")
 
-png("../arma_visualizations/wildfire/wildfire_stationary_pacf_plot.png", width = 8, height = 6, units = "in", res = 400)
-pacf(diff(wildfire.ts.ca.log, 12), lag.max = 100, main = "PACF of California Wildfires") # p=1-2
-dev.off()
+ggPacf(diff(wildfire.ts.ca.log, 12), lag.max = 100) +
+  ggtitle("PACF of Average Temperature in California") # q=1-2, Q=1
+ggsave("../arma_visualizations/wildfire/wildfire_stationary_pacf_plot.svg", width = 8, height = 6, units = "in")
 
 SARIMA.c <- function(p1, p2, q1, q2, P1, P2, Q1, Q2, data) {
   temp <- c()
@@ -151,7 +151,7 @@ mse12 <- abs(mean((as.numeric(f2$mean) - as.numeric((test)))^2))
 mse13 <- abs(mean((as.numeric(f3$mean) - as.numeric((test)))^2))
 
 df <- data.frame(
-  Model = c("Arima", "Mean Forecast", "Naive", "Random Walk Forecast"),
+  Model = c("Sarima", "Mean Forecast", "Naive", "Random Walk Forecast"),
   MAE = c(mae1, mae11, mae12, mae13),
   MSE = c(mse1, mse11, mse12, mse13)
 ) %>%

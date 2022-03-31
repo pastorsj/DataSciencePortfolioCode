@@ -95,7 +95,7 @@ write.csv(output, "../arma_data/wildfire/arma_results.csv", row.names = FALSE)
 
 
 (fit <- Arima(wildfire.ts.ca.log,
-  order = c(1, 0, 1), seasonal = list(order = c(1, 1, 1), period = 12),
+  order = c(1, 0, 0), seasonal = list(order = c(1, 1, 1), period = 12),
   include.drift = TRUE, lambda = 0, method = "ML"
 ))
 png("../arma_visualizations/wildfire/residuals_fit.png", width = 8, height = 6, units = "in", res = 400)
@@ -105,17 +105,17 @@ dev.off()
 auto.arima(wildfire.ts.ca.log)
 
 forecasted.viz <- wildfire.ts.ca.log %>%
-  Arima(order = c(1, 0, 1), seasonal = c(1, 1, 1)) %>%
+  Arima(order = c(1, 0, 0), seasonal = c(1, 1, 1)) %>%
   forecast() %>%
   autoplot()
 ggsave("../arma_visualizations/wildfire/forecast_viz.svg", plot = forecasted.viz, width = 10, height = 6, units = "in")
 
-png("../arma_visualizations/wildfire/wildfire_sarima_1_0_1_1_1_1.png", width = 8, height = 6, units = "in", res = 400)
-sarima(wildfire.ts.ca.log, p = 1, d = 0, q = 1, P = 1, D = 1, Q = 1, S = 12)
+png("../arma_visualizations/wildfire/wildfire_sarima_1_0_0_1_1_1.png", width = 8, height = 6, units = "in", res = 400)
+sarima(wildfire.ts.ca.log, p = 1, d = 0, q = 0, P = 1, D = 1, Q = 1, S = 12)
 dev.off()
 
-png("../arma_visualizations/wildfire/wildfire_sarima_forecast_1_0_1_1_1_1.png", width = 8, height = 6, units = "in", res = 400)
-sarima.for(wildfire.ts.ca.log, 60, 1, 0, 1, 1, 1, 1, 12)
+png("../arma_visualizations/wildfire/wildfire_sarima_forecast_1_0_0_1_1_1.png", width = 8, height = 6, units = "in", res = 400)
+sarima.for(wildfire.ts.ca.log, 60, 1, 0, 0, 1, 1, 1, 12)
 dev.off()
 
 # Compare against other methods
@@ -125,7 +125,7 @@ length(wildfire.ts.ca.log)
 train <- ts(wildfire.ts.ca.log[1:230])
 test <- ts(wildfire.ts.ca.log[231:288])
 fit <- Arima(train,
-  order = c(1, 0, 1), seasonal = list(order = c(1, 1, 1), period = 12),
+  order = c(1, 0, 0), seasonal = list(order = c(1, 1, 1), period = 12),
   include.drift = TRUE, lambda = 0, method = "ML"
 )
 summary(fit)
@@ -176,7 +176,7 @@ for (i in 1:(n - k)) {
   xtest <- window(wildfire.ts.ca.log, start = st + (i + 1) / 12, end = st + (i + 12) / 12)
 
   fit <- Arima(xtrain,
-    order = c(1, 0, 1), seasonal = list(order = c(1, 1, 1), period = 12),
+    order = c(1, 0, 0), seasonal = list(order = c(1, 1, 1), period = 12),
     include.drift = TRUE, lambda = 0, method = "ML"
   )
   fcast <- forecast(fit, h = 12)
@@ -208,7 +208,7 @@ for (i in 1:e) {
   xtest <- window(wildfire.ts.ca.log, start = st + (i - 1) + 1 / 12, end = st + i)
 
   fit <- Arima(xtrain,
-    order = c(1, 0, 1), seasonal = list(order = c(1, 1, 1), period = 12),
+    order = c(1, 0, 0), seasonal = list(order = c(1, 1, 1), period = 12),
     include.drift = TRUE, lambda = 0, method = "ML"
   )
   fcast <- forecast(fit, h = 12)

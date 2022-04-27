@@ -168,9 +168,9 @@ test_predict = model.predict(Xval)
 # Print error
 train_rmse, test_rmse = print_error(Ytrain, Yval, train_predict, test_predict)
 rmse_table = {
-    'Model': ['Recurrent Neural Network'],
-    'Training RMSE': [train_rmse],
-    'Testing RMSE': [test_rmse]
+    'model': ['Recurrent Neural Network'],
+    'training_rmse': [train_rmse],
+    'testing_rmse': [test_rmse]
 }
 
 # ------------------------------------------------------------------------------------
@@ -189,10 +189,10 @@ test_predict = model.predict(Xval)
 
 # Print error
 train_rmse, test_rmse = print_error(Ytrain, Yval, train_predict, test_predict)
-rmse_table['Model'].append(
+rmse_table['model'].append(
     'Recurrent Neural Network (with L1L2 Regularization)')
-rmse_table['Training RMSE'].append(train_rmse)
-rmse_table['Testing RMSE'].append(test_rmse)
+rmse_table['training_rmse'].append(train_rmse)
+rmse_table['testing_rmse'].append(test_rmse)
 
 # ------------------------------------------------------------------------------------
 
@@ -209,9 +209,9 @@ test_predict = model.predict(Xval)
 
 # Print error
 train_rmse, test_rmse = print_error(Ytrain, Yval, train_predict, test_predict)
-rmse_table['Model'].append('GRU Neural Network')
-rmse_table['Training RMSE'].append(train_rmse)
-rmse_table['Testing RMSE'].append(test_rmse)
+rmse_table['model'].append('GRU Neural Network')
+rmse_table['training_rmse'].append(train_rmse)
+rmse_table['testing_rmse'].append(test_rmse)
 
 # ------------------------------------------------------------------------------------
 
@@ -228,9 +228,9 @@ test_predict = model.predict(Xval)
 
 # Print error
 train_rmse, test_rmse = print_error(Ytrain, Yval, train_predict, test_predict)
-rmse_table['Model'].append('GRU Neural Network (with L1L2 Regularization)')
-rmse_table['Training RMSE'].append(train_rmse)
-rmse_table['Testing RMSE'].append(test_rmse)
+rmse_table['model'].append('GRU Neural Network (with L1L2 Regularization)')
+rmse_table['training_rmse'].append(train_rmse)
+rmse_table['testing_rmse'].append(test_rmse)
 
 # ------------------------------------------------------------------------------------
 
@@ -247,9 +247,9 @@ test_predict = model.predict(Xval)
 
 # Print error
 train_rmse, test_rmse = print_error(Ytrain, Yval, train_predict, test_predict)
-rmse_table['Model'].append('LSTM Neural Network')
-rmse_table['Training RMSE'].append(train_rmse)
-rmse_table['Testing RMSE'].append(test_rmse)
+rmse_table['model'].append('LSTM Neural Network')
+rmse_table['training_rmse'].append(train_rmse)
+rmse_table['testing_rmse'].append(test_rmse)
 
 # ------------------------------------------------------------------------------------
 
@@ -267,9 +267,9 @@ test_predict = model.predict(Xval)
 
 # Print error
 train_rmse, test_rmse = print_error(Ytrain, Yval, train_predict, test_predict)
-rmse_table['Model'].append('LSTM Neural Network (with L1L2 Regularization)')
-rmse_table['Training RMSE'].append(train_rmse)
-rmse_table['Testing RMSE'].append(test_rmse)
+rmse_table['model'].append('LSTM Neural Network (with L1L2 Regularization)')
+rmse_table['training_rmse'].append(train_rmse)
+rmse_table['testing_rmse'].append(test_rmse)
 
 # ------------------------------------------------------------------------------------
 

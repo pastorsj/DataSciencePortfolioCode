@@ -199,6 +199,28 @@ class ClimateUploadService:
             print('Uploading', file, 'to S3')
             print('Successfully uploaded')
 
+    def store_nn_visualizations(self):
+        print('Store nn visualizations in S3')
+
+        png_visualizations = list(glob.iglob(f'nn_visualizations/**/*.png', recursive=True))
+        for file in png_visualizations:
+            print('Opening file', file)
+            png = open(file, "rb")
+            print('Attempting to upload nn visualizations to s3')
+            self._s3_api.upload_png(png, file.replace('arch_visualizations/', ''), S3Api.S3Location.NN_VISUALIZATIONS)
+            print('Uploading', file, 'to S3')
+            print('Successfully uploaded')
+            png.close()
+
+        csv_data = list(glob.iglob(f'nn_data/**/*.csv', recursive=True))
+        for file in csv_data:
+            print('Opening file', file)
+            df = pd.read_csv(file)
+            print('Attempting to upload nn data to s3')
+            self._s3_api.upload_df(df, file.replace('arch_data/', ''), S3Api.S3Location.NN_DATA)
+            print('Uploading', file, 'to S3')
+            print('Successfully uploaded')
+
 
 if __name__ == '__main__':
     from dotenv import load_dotenv
@@ -209,4 +231,4 @@ if __name__ == '__main__':
     climate_upload_service = ClimateUploadService(FileStorage(), S3Api.S3Api())
 
     print('Upload data to S3')
-    climate_upload_service.store_arma_visualizations()
+    climate_upload_service.store_nn_visualizations()

@@ -15,6 +15,8 @@ class S3Location(Enum):
     ARMA_DATA = 'arma_data'
     ARCH_VISUALIZATIONS = 'arch_visualizations'
     ARCH_DATA = 'arch_data'
+    NN_VISUALIZATIONS = 'nn_visualizations'
+    NN_DATA = 'nn_data'
 
 
 class S3Api:

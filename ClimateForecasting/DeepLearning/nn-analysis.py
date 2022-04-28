@@ -200,7 +200,7 @@ rmse_table['testing_rmse'].append(test_rmse)
 model = create_GRU(hidden_units=3, dense_units=1, input_shape=(lag, Xtrain.shape[-1]),
                    activation=['tanh', 'relu'])
 history = model.fit(Xtrain, Ytrain, epochs=20, batch_size=1, verbose=2)
-plot_model(history, 'GRU Model (with L1L2 Regularization)', 'gru_model.png')
+plot_model(history, 'GRU Model', 'gru_model.png')
 
 yhat_gru = [x[0] for x in model.predict(Xval)]
 
@@ -300,7 +300,6 @@ plt.plot(pivoted.index, pivoted.temp_absolute_lstm_forecast,
 plt.title('Temperature Forecasts')
 plt.legend()
 plt.savefig('../nn_visualizations/nn_forecasts.png')
-plt.show()
 
 # ------------------------------------------------------------------------------------
 
@@ -331,7 +330,6 @@ plt.plot(pivoted.index, pivoted.temp_absolute_lstm_forecast,
 plt.title('Temperature Forecasts (with Regularization)')
 plt.legend()
 plt.savefig('../nn_visualizations/nn_reg_forecasts.png')
-plt.show()
 
 # ------------------------------------------------------------------------------------
 
